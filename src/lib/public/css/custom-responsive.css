@@ -1,0 +1,32 @@
+@media screen and (max-width: 576px){
+    ul.progressbar{
+		position: absolute;
+		left:-15px;
+		bottom:-15px;
+	}
+	.progressbarWrap .progressbar li{
+		font-size:0px;
+	}
+	.progressbarWrap .progressbar li:before{
+		border: none;
+	}
+	.progressbarWrap .progressbar li.active:before{
+		background-color: #FFF;
+		border-color: #FFF;
+	}
+	.progressbarWrap .progressbar li:before {
+		width:0px;
+		height:0px;
+		line-height:0px;
+	}
+
+	.progressbarWrap .progressbar li:after {
+		width: 100%;
+		height: 4px;
+		content: '';
+		position: absolute;
+		top: 10px;
+		z-index: -1;
+	}
+}
+/********* For Galaxy Fold  ******/

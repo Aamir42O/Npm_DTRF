@@ -1,0 +1,44 @@
+{
+  "name": "b2c6a1a8wq-ak",
+  "version": "1.8.5",
+  "dependencies": {
+    "@babel/plugin-transform-arrow-functions": "^7.14.5",
+    "@babel/plugin-transform-template-literals": "^7.14.5",
+    "@testing-library/jest-dom": "^5.14.1",
+    "@testing-library/react": "^11.2.7",
+    "@testing-library/user-event": "^12.8.3",
+    "web-vitals": "^1.1.2"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "npx babel src/lib --out-dir  dist",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.14.5",
+    "@babel/core": "^7.14.6",
+    "@babel/preset-env": "^7.14.5",
+    "@babel/preset-react": "^7.14.5",
+    "mkdirp": "^1.0.4",
+    "rimraf": "^3.0.2"
+  }
+}

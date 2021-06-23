@@ -1,0 +1,27 @@
+
+/*# sourceMappingURL=data:application/json;charset=utf8;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiY3VzdG9tLmNzcyIsInNvdXJjZXMiOlsiY3VzdG9tLnNjc3MiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IiJ9 */
+
+/*# sourceMappingURL=custom.css.map */
+.customWrap{
+    width: 100%;
+    padding: 20px;
+    border-radius: 5px !important;
+    background: #f2f7f9 !important;
+    border: 1px solid #d0dde1;
+}
+.modal-header{
+    border-bottom:1px solid #fdf2ff;
+    padding-bottom: 15px;
+}
+.modal-header .modal-title{
+    font-size: 17px;
+    line-height: 28px;
+    padding-right: 10px;
+    margin-bottom: 0;
+    color: #212529;
+}
+.testDeatilsWrap{
+    width:100%;
+    position: relative;
+    border-top:1px solid #CCC;
+}
