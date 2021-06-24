@@ -232,11 +232,11 @@ const Summary = props => {
     data: patient_details.salutation
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "First Name",
-    data: (hasNbs && (patient_details.hasBabyName == "true" ? "Baby " : "B/O ")) + from == "Confirmation" ? patient_details.firstName : patient_details.name.firstName,
+    data: (hasNbs ? patient_details.hasBabyName == "true" ? "Baby " : "B/O " : "") + from == "Confirmation" ? patient_details.firstName : patient_details.name.firstName,
     className: hasNbs ? "col-md-5 col-12" : "col-md-6 col-12"
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Last Name",
-    data: (hasNbs && (patient_details.hasBabyName == "true" ? "Baby " : "B/O ")) + from == "Confirmation" ? patient_details.lastName : patient_details.name.lastName,
+    data: (hasNbs ? patient_details.hasBabyName == "true" ? "Baby " : "B/O " : "") + from == "Confirmation" ? patient_details.lastName : patient_details.name.lastName,
     className: hasNbs ? "col-md-5 col-12" : "col-md-6 col-12"
   }))), /*#__PURE__*/_react.default.createElement("div", {
     className: "row"

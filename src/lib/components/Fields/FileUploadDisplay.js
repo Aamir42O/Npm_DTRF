@@ -16,7 +16,7 @@ const FileUploadDisplay = React.forwardRef((props, ref) => {
                         className="btn btn-primary"
                         onClick={e => ref.current.click()}
                     >
-                        {props.fileButtonName}
+                        {props.fileButtonName} {props.mandatory && "*"}
                     </button>
                 </div>
 

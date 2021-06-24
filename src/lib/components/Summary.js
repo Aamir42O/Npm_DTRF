@@ -279,13 +279,13 @@ const Summary = (props) => {
                                                                         }</b></label>
                                                                     </div>
                                                                 </div>
-                                                            </>
+                                                            </> 
                                                             } */}
                                                             <DisplayFields
                                                                 title="First Name"
                                                                 data={
-                                                                    (hasNbs &&
-                                                                        (patient_details.hasBabyName == "true" ? "Baby " : "B/O ")) +
+                                                                    (hasNbs ?
+                                                                        (patient_details.hasBabyName == "true" ? "Baby " : "B/O ") : "") +
                                                                         from == "Confirmation" ?
                                                                         patient_details
                                                                             .firstName :
@@ -296,9 +296,9 @@ const Summary = (props) => {
                                                             <DisplayFields
                                                                 title="Last Name"
                                                                 data={
-                                                                    (hasNbs &&
+                                                                    (hasNbs ?
 
-                                                                        (patient_details.hasBabyName == "true" ? "Baby " : "B/O ")) +
+                                                                        (patient_details.hasBabyName == "true" ? "Baby " : "B/O ") : "") +
                                                                         from == "Confirmation" ?
                                                                         patient_details
                                                                             .lastName :

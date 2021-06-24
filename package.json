@@ -1,6 +1,6 @@
 {
   "name": "b2c6a1a8wq-ak",
-  "version": "1.8.5",
+  "version": "1.9.1",
   "dependencies": {
     "@babel/plugin-transform-arrow-functions": "^7.14.5",
     "@babel/plugin-transform-template-literals": "^7.14.5",

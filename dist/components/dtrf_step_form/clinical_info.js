@@ -47,6 +47,8 @@ var _commonHelper = require("../../helper/commonHelper");
 
 var _formData = require("../../actions/formData");
 
+var _router = _interopRequireDefault(require("next/router"));
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function _getRequireWildcardCache(nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
@@ -826,7 +828,8 @@ const ClinicalHistory = props => {
 
   const handleOnClickSaveAndExit = async () => {
     await handleOnClickSave();
-    Router.push("/super-dtrf");
+
+    _router.default.push("/super-dtrf");
   }; // !!!!!!!!!!!~~~~~~~~~~~~~~~~~~~~ADMIN PANEL CODE CLOSE~~~~~~~~~~~~~~~~~!!!!!!!!!!!!!!!!!
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~FILE UPLOAD~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
 
@@ -1341,8 +1344,8 @@ const ClinicalHistory = props => {
                 errors.sampleCollectionDate = "Future Date is not allowed";
               }
 
-              if (diff > -10) {
-                errors.sampleCollectionDate = "Date should be 10 days before current date";
+              if (!(diff > -10)) {
+                errors.sampleCollectionDate = "Date should be within 10 days before current date";
               }
             }
 
@@ -1599,6 +1602,12 @@ const ClinicalHistory = props => {
             }
           }
 
+          if (values.Gravida && values.Abortion) {
+            if (values.Gravida < values.Abortion) {
+              errors.Gravida = "value cant be lower than Abortion";
+            }
+          }
+
           if (values.Para) {
             if (values.Para < 0 || values.Para > 20) {
               errors.Para = "Values should be between 0 - 20";
@@ -1785,7 +1794,7 @@ const ClinicalHistory = props => {
 
           if (testTrimester == "First") {
             if (!values.crl) {} else if (hasPns && values.crl > 85) {
-              errors.crl = "CRL should be between 45 and 85";
+              errors.crl = "CRL should be between 0 and 85";
             } else if ((values.crl > 84 || values.crl < 45) && !hasPns) {
               errors.crl = "CRL should be between 45 and 84";
             } else if (!/^\s*-?\d+(\.\d{1,2})?\s*$/.test(values.crl)) {
@@ -1829,8 +1838,8 @@ const ClinicalHistory = props => {
 
           if (testTrimester == "Second") {
             if (values.crl != "" || values.crl === 0) {
-              if (values.crl > 84 || values.crl < 45) {
-                errors.crl = "CRL should be between 45 and 84";
+              if (values.crl > 85) {
+                errors.crl = "CRL should be below 85";
               } else if (!/^\s*-?\d+(\.\d{1,2})?\s*$/.test(values.crl)) {
                 errors.crl = "Max two digits allowed after decimal";
               }
@@ -1908,8 +1917,8 @@ const ClinicalHistory = props => {
                 errors.sampleCollectionDate = "Future Date is not allowed";
               }
 
-              if (diff > -10) {
-                errors.sampleCollectionDate = "Date should be 10 days before current date";
+              if (!(diff > -10)) {
+                errors.sampleCollectionDate = "Date should be within 10 days before current date";
               }
             }
 
@@ -2198,6 +2207,12 @@ const ClinicalHistory = props => {
               if (values.Live > diff) {
                 errors.live = "Value of Live should be less than or equal to ".concat(diff, " ");
               }
+            }
+          }
+
+          if (values.Gravida && values.Abortion) {
+            if (values.Gravida < values.Abortion) {
+              errors.Gravida = "value cant be lower than Abortion";
             }
           }
 
@@ -2507,8 +2522,8 @@ const ClinicalHistory = props => {
 
           if (testTrimester == "Second") {
             if (values.crl != "" || values.crl === 0) {
-              if (values.crl > 84 || values.crl < 45) {
-                errors.crl = "CRL should be between 45 and 84";
+              if (values.crl > 85) {
+                errors.crl = "CRL should be below 85";
               } else if (!/^\s*-?\d+(\.\d{1,2})?\s*$/.test(values.crl)) {
                 errors.crl = "Max two digits allowed after decimal";
               }
@@ -3671,6 +3686,7 @@ const ClinicalHistory = props => {
       name: data.variable,
       ref: props.fileUpload.filesReference[id],
       files: props.fileUpload.files[data.variable] ? props.fileUpload.files[data.variable] : [],
+      mandatory: props.fileUpload.mandatoryFiles[id] ? true : false,
       fileButtonName: data.display,
       removeFile: onRemoveFile
     })), values.historyOfDownSyndrome == "Yes" && values.confirmatoryTestHDS == "Yes" && /*#__PURE__*/_react.default.createElement(_FileUploadDisplay.default, {
@@ -4136,7 +4152,7 @@ const ClinicalHistory = props => {
       padding: "5px 20px"
     }
   }, /*#__PURE__*/_react.default.createElement("button", {
-    onClick: e => Router.push("/super-dtrf"),
+    onClick: e => _router.default.push("/super-dtrf"),
     className: "btn btn-primary"
   }, "Exit"))), /*#__PURE__*/_react.default.createElement("div", {
     className: "col-md-10 col-10 text-right"

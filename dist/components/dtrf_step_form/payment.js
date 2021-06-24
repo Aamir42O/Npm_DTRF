@@ -19,6 +19,8 @@ var _commonHelper = require("../../helper/commonHelper");
 
 var _router = _interopRequireDefault(require("next/router"));
 
+var _jsCookie = _interopRequireDefault(require("js-cookie"));
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function _getRequireWildcardCache(nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
@@ -40,8 +42,17 @@ const Payment = props => {
   const [confirmationBy, setConfirmationBy] = (0, _react.useState)("");
   const [, reRender] = (0, _react.useState)();
   const [mrpError, setMrpError] = (0, _react.useState)(false);
+  const [instituteType, setInstituteType] = (0, _react.useState)(1);
   (0, _react.useEffect)(() => {
     console.log("IN use effect", props);
+
+    if (!instituteType) {
+      if (props.fromSuperDtrf) {
+        setInstituteType(props.formDataRedux.institute_info.type);
+      } else if (props.fromDtrfFront) {
+        setInstituteType(_jsCookie.default.get("instituteType"));
+      }
+    }
 
     if (testList.length == 0) {
       getTestList();
@@ -267,9 +278,9 @@ const Payment = props => {
     id: "valdatinStep1"
   }, /*#__PURE__*/_react.default.createElement(_formik.Formik, {
     initialValues: {
-      paysTo: props.payment != 1 ? props.payment.paysTo : "",
+      paysTo: instituteType == 1 ? "Institute" : (instituteType == 2 || instituteType == 3 || instituteType == 4) && "Lab",
       confirmationBy: props.payment != 1 ? props.payment.confirmationBy : "",
-      paymentMode: props.payment != 1 ? props.payment.paymentMode : ""
+      paymentMode: instituteType == 2 || instituteType == 3 ? "Cash" : instituteType == 4 && ""
     },
     validate: values => {
       const errors = {};
@@ -277,8 +288,7 @@ const Payment = props => {
       if (props.fromSuperDtrf) {}
 
       if (props.fromDtrfFront) {
-        if (props.formValues.collectionLocation.location != "Home" && !values.paysTo) {
-          errors.paysTo = "Required";
+        if (props.formValues.collectionLocation.location != "Home" && !values.paysTo) {// errors.paysTo = "Required";
         }
 
         if (props.formValues.collectionLocation.location != "Home" && !values.confirmationBy) {
@@ -289,7 +299,7 @@ const Payment = props => {
           errors.paidToInstitute = "Required";
         }
 
-        if (props.formValues.collectionLocation.location != "Home" && values.paysTo == "Lab" && !values.paymentMode) {
+        if (props.formValues.collectionLocation.location != "Home" && instituteType == 4 && !values.paymentMode) {
           errors.paymentMode = "Required";
         }
 
@@ -321,37 +331,7 @@ const Payment = props => {
       type: "button",
       onClick: () => handleOnClickSaveAndExit(values),
       className: "btn btn-primary mr-2"
-    }, "Save And Exit")))), /*#__PURE__*/_react.default.createElement("div", {
-      role: "group",
-      "aria-labelledby": "my-radio-group1"
-    }, /*#__PURE__*/_react.default.createElement("div", {
-      className: "section-title mb-4 mt-0"
-    }, "Pay To ", /*#__PURE__*/_react.default.createElement("span", {
-      className: "marked"
-    }, "*")), /*#__PURE__*/_react.default.createElement("div", {
-      className: "pretty p-default p-round"
-    }, /*#__PURE__*/_react.default.createElement(_formik.Field, {
-      type: "radio",
-      name: "paysTo",
-      value: "Institute" // onClick={handleOnClickPaysTo}
-
-    }), /*#__PURE__*/_react.default.createElement("div", {
-      className: "state"
-    }, /*#__PURE__*/_react.default.createElement("label", null, "INSTITUTE"))), /*#__PURE__*/_react.default.createElement("div", {
-      className: "pretty p-default p-round"
-    }, /*#__PURE__*/_react.default.createElement(_formik.Field, {
-      type: "radio",
-      name: "paysTo",
-      value: "Lab" // onClick={handleOnClickPaysTo}
-
-    }), /*#__PURE__*/_react.default.createElement("div", {
-      className: "state"
-    }, /*#__PURE__*/_react.default.createElement("label", null, "LAB")))), /*#__PURE__*/_react.default.createElement(_formik.ErrorMessage, {
-      id: "paysTo",
-      name: "paysTo",
-      component: "div",
-      className: "formErr"
-    })), /*#__PURE__*/_react.default.createElement("div", {
+    }, "Save And Exit"))))), /*#__PURE__*/_react.default.createElement("div", {
       className: "card p-3",
       style: {
         'boxShadow': 'none'
@@ -402,7 +382,7 @@ const Payment = props => {
       style: {
         'fontSize': '16px'
       }
-    }), " ", /*#__PURE__*/_react.default.createElement("b", null, totalMrp)))))), values.paysTo == 'Lab' && /*#__PURE__*/_react.default.createElement("div", {
+    }), " ", /*#__PURE__*/_react.default.createElement("b", null, totalMrp)))))), instituteType == 4 && /*#__PURE__*/_react.default.createElement("div", {
       className: "form-group mt-2"
     }, /*#__PURE__*/_react.default.createElement("div", {
       role: "group",

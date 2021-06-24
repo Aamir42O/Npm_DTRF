@@ -1117,6 +1117,22 @@ const Confirmation = (props) => {
       </Modal>
       {/* -------------------- close -----------------home location modal ---------------------------*/}
       {
+        props.fromSuperDtrf &&
+        <div className="row">
+          <div className="col-md-12 col-12 text-right">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleOnClickSaveAndExit}
+              name="save"
+            >
+              Save and Exit
+            </button>
+
+          </div>
+        </div>
+      }
+      {
         formValues &&
         <Summary
           from="Confirmation"

@@ -5,6 +5,7 @@ import { message } from "antd";
 import { setFormData } from "../../actions/formData";
 import { successMessage, MousePopover, errorMessage, warningMessage, infoMessage } from "../../helper/commonHelper";
 import Router from "next/router";
+import Cookies from "js-cookie"
 
 
 
@@ -17,8 +18,17 @@ const Payment = (props) => {
   const [confirmationBy, setConfirmationBy] = useState("")
   const [, reRender] = useState();
   const [mrpError, setMrpError] = useState(false)
+  const [instituteType, setInstituteType] = useState(1)
+
   useEffect(() => {
     console.log("IN use effect", props)
+    if (!instituteType) {
+      if (props.fromSuperDtrf) {
+        setInstituteType(props.formDataRedux.institute_info.type)
+      } else if (props.fromDtrfFront) {
+        setInstituteType(Cookies.get("instituteType"))
+      }
+    }
     if (testList.length == 0) {
       getTestList();
     }
@@ -127,6 +137,7 @@ const Payment = (props) => {
       return
     }
 
+
     if (props.formValues.collectionLocation.location == "Home") {
       console.log("home location");
       props.handleOnClickNext("payment", { paidToInstitute: values.paidToInstitute, price_entered: mrpList });
@@ -219,9 +230,9 @@ const Payment = (props) => {
             <fieldset id="valdatinStep1">
               <Formik
                 initialValues={{
-                  paysTo: props.payment != 1 ? props.payment.paysTo : "",
+                  paysTo: (instituteType == 1) ? "Institute" : (instituteType == 2 || instituteType == 3 || instituteType == 4) && "Lab",
                   confirmationBy: props.payment != 1 ? props.payment.confirmationBy : "",
-                  paymentMode: props.payment != 1 ? props.payment.paymentMode : ""
+                  paymentMode: (instituteType == 2 || instituteType == 3) ? "Cash" : instituteType == 4 && ""
                 }}
                 validate={(values) => {
 
@@ -232,7 +243,7 @@ const Payment = (props) => {
 
                   if (props.fromDtrfFront) {
                     if (props.formValues.collectionLocation.location != "Home" && (!values.paysTo)) {
-                      errors.paysTo = "Required";
+                      // errors.paysTo = "Required";
                     }
                     if (props.formValues.collectionLocation.location != "Home" && (!values.confirmationBy)) {
                       errors.confirmationBy = "Required";
@@ -240,7 +251,7 @@ const Payment = (props) => {
                     if (props.formValues.collectionLocation.location == "Home" && (!values.paidToInstitute)) {
                       errors.paidToInstitute = "Required";
                     }
-                    if (props.formValues.collectionLocation.location != "Home" && values.paysTo == "Lab" && (!values.paymentMode)) {
+                    if (props.formValues.collectionLocation.location != "Home" && instituteType == 4 && (!values.paymentMode)) {
 
                       errors.paymentMode = "Required";
                     }
@@ -280,7 +291,7 @@ const Payment = (props) => {
 
                             </>
                           }
-                          <div role="group" aria-labelledby="my-radio-group1">
+                          {/* <div role="group" aria-labelledby="my-radio-group1">
                             <div className="section-title mb-4 mt-0">
                               Pay To <span className="marked">*</span>
                             </div>
@@ -313,7 +324,7 @@ const Payment = (props) => {
                             name="paysTo"
                             component="div"
                             className="formErr"
-                          />
+                          /> */}
                         </div>
                       }
                       <div className="card p-3" style={{ 'boxShadow': 'none' }}>
@@ -369,7 +380,7 @@ const Payment = (props) => {
                       </div>
                       {/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ IF Selected Lab ask for Payment mode~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  */}
                       {
-                        values.paysTo == 'Lab' &&
+                        instituteType == 4 &&
                         <div className="form-group mt-2">
                           <div role="group" aria-labelledby="my-radio-group1">
                             <label className="mb-3">Payment Type</label>

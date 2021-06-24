@@ -25,6 +25,7 @@ import AsyncSelect from "react-select/async";
 import reqWithToken from "../../helper/Auth";
 import { successMessage, MousePopover, errorMessage, warningMessage, infoMessage } from "../../helper/commonHelper";
 import { setFormData } from "../../actions/formData";
+import Router from 'next/router'
 
 
 const ClinicalHistory = (props) => {
@@ -1266,8 +1267,8 @@ const ClinicalHistory = (props) => {
                         if (diff > 0) {
                           errors.sampleCollectionDate = "Future Date is not allowed"
                         }
-                        if (diff > -10) {
-                          errors.sampleCollectionDate = "Date should be 10 days before current date"
+                        if (!(diff > -10)) {
+                          errors.sampleCollectionDate = "Date should be within 10 days before current date"
                         }
                       }
                       if (values.scanDate && values.sampleCollectionDate &&
@@ -1512,6 +1513,11 @@ const ClinicalHistory = (props) => {
                         }
                       }
                     }
+                    if (values.Gravida && values.Abortion) {
+                      if (values.Gravida < values.Abortion) {
+                        errors.Gravida = "value cant be lower than Abortion"
+                      }
+                    }
 
                     if (values.Para) {
                       if (values.Para < 0 || values.Para > 20) {
@@ -1715,7 +1721,7 @@ const ClinicalHistory = (props) => {
 
                       if (!values.crl) {
                       } else if (hasPns && values.crl > 85) {
-                        errors.crl = "CRL should be between 45 and 85"
+                        errors.crl = "CRL should be between 0 and 85"
                       }
                       else if ((values.crl > 84 || values.crl < 45) && !hasPns) {
                         errors.crl = "CRL should be between 45 and 84";
@@ -1763,8 +1769,8 @@ const ClinicalHistory = (props) => {
                     if (testTrimester == "Second") {
                       if (values.crl != "" || values.crl === 0) {
 
-                        if (values.crl > 84 || values.crl < 45) {
-                          errors.crl = "CRL should be between 45 and 84";
+                        if (values.crl > 85) {
+                          errors.crl = "CRL should be below 85";
                         } else if (!/^\s*-?\d+(\.\d{1,2})?\s*$/.test(values.crl)) {
                           errors.crl = "Max two digits allowed after decimal";
                         }
@@ -1836,8 +1842,8 @@ const ClinicalHistory = (props) => {
                         if (diff > 0) {
                           errors.sampleCollectionDate = "Future Date is not allowed"
                         }
-                        if (diff > -10) {
-                          errors.sampleCollectionDate = "Date should be 10 days before current date"
+                        if (!(diff > -10)) {
+                          errors.sampleCollectionDate = "Date should be within 10 days before current date"
                         }
                       }
                       if (values.scanDate && values.sampleCollectionDate &&
@@ -2093,6 +2099,11 @@ const ClinicalHistory = (props) => {
                         if (values.Live > diff) {
                           errors.live = `Value of Live should be less than or equal to ${diff} `
                         }
+                      }
+                    }
+                    if (values.Gravida && values.Abortion) {
+                      if (values.Gravida < values.Abortion) {
+                        errors.Gravida = "value cant be lower than Abortion"
                       }
                     }
 
@@ -2389,8 +2400,8 @@ const ClinicalHistory = (props) => {
                     if (testTrimester == "Second") {
                       if (values.crl != "" || values.crl === 0) {
 
-                        if (values.crl > 84 || values.crl < 45) {
-                          errors.crl = "CRL should be between 45 and 84";
+                        if (values.crl > 85) {
+                          errors.crl = "CRL should be below 85";
                         } else if (!/^\s*-?\d+(\.\d{1,2})?\s*$/.test(values.crl)) {
                           errors.crl = "Max two digits allowed after decimal";
                         }
@@ -3899,7 +3910,7 @@ const ClinicalHistory = (props) => {
                               files={props.fileUpload.files[data.variable] ?
                                 props.fileUpload.files[data.variable] : []
                               }
-
+                              mandatory={props.fileUpload.mandatoryFiles[id] ? true : false}
                               fileButtonName={data.display}
                               removeFile={onRemoveFile}
                             />

@@ -25,7 +25,7 @@ const FileUploadDisplay = /*#__PURE__*/_react.default.forwardRef((props, ref) =>
     type: "button",
     className: "btn btn-primary",
     onClick: e => ref.current.click()
-  }, props.fileButtonName))), /*#__PURE__*/_react.default.createElement("label", {
+  }, props.fileButtonName, " ", props.mandatory && "*"))), /*#__PURE__*/_react.default.createElement("label", {
     className: "formErr",
     style: {
       color: "red"

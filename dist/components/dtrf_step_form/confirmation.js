@@ -1228,7 +1228,16 @@ const Confirmation = props => {
     variant: "primary",
     type: "submit",
     onClick: handleOkayButtonClick
-  }, "Okay")))), formValues && /*#__PURE__*/_react.default.createElement(_Summary.default, {
+  }, "Okay")))), props.fromSuperDtrf && /*#__PURE__*/_react.default.createElement("div", {
+    className: "row"
+  }, /*#__PURE__*/_react.default.createElement("div", {
+    className: "col-md-12 col-12 text-right"
+  }, /*#__PURE__*/_react.default.createElement("button", {
+    type: "button",
+    className: "btn btn-primary",
+    onClick: handleOnClickSaveAndExit,
+    name: "save"
+  }, "Save and Exit"))), formValues && /*#__PURE__*/_react.default.createElement(_Summary.default, {
     from: "Confirmation",
     doctor_info: formValues.doctor_info,
     test_info: formValues.test_info,

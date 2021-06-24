@@ -1,4 +1,3 @@
-import Login from "./login";
 import { useRouter } from "next/router";
 import Cookies from "js-cookie";
 import React from "react"
@@ -13,9 +12,7 @@ const withAuth = Component => {
         // If user is not logged in, return login component
         console.log("ROUTER", router.pathname)
         if (!isAuthenticated) {
-            return (
-                <Login />
-            );
+
         }
         // if (router.pathname.startsWith("/dtrf_front") && (Cookies.get("accessToken") != "admin")) {
         //     return (<Home props={props} />)

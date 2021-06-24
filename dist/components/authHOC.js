@@ -5,8 +5,6 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = void 0;
 
-var _login = _interopRequireDefault(require("./login"));
-
 var _router = require("next/router");
 
 var _jsCookie = _interopRequireDefault(require("js-cookie"));
@@ -26,9 +24,7 @@ const withAuth = Component => {
 
     console.log("ROUTER", router.pathname);
 
-    if (!isAuthenticated) {
-      return /*#__PURE__*/_react.default.createElement(_login.default, null);
-    } // if (router.pathname.startsWith("/dtrf_front") && (Cookies.get("accessToken") != "admin")) {
+    if (!isAuthenticated) {} // if (router.pathname.startsWith("/dtrf_front") && (Cookies.get("accessToken") != "admin")) {
     //     return (<Home props={props} />)
     // }
     // If user is logged in, return original component
