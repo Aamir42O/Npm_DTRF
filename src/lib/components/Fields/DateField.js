@@ -6,7 +6,7 @@ const DateFieldComponent = (props) => {
 
     return (
 
-        <div className={props.className ? props.className : "col-md-6 col-12"}>
+        <div className={props.className ? props.className : "col-md-6 col-12 mb-2"}>
             <div className="form-group">
                 <label>
                     {

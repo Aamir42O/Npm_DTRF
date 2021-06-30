@@ -17,7 +17,7 @@ import NumberField from "../Fields/NumberField";
 import TextField from "../Fields/TextField"
 import DateFieldComponent from "../Fields/DateField"
 import { successMessage, MousePopover, errorMessage, warningMessage, infoMessage } from "../../helper/commonHelper";
-
+import DisplayFields from "../DisplayFields/DisplayField";
 const emptyFormObject = {
   salutation: "mr",
   name: {
@@ -80,33 +80,29 @@ const PatientForm = (props) => {
   const [patientFoundModal, setPatientFoundModal] = useState(false)
   const [patientFoundDetails, setPatientFoundDetails] = useState("")
   const [usePatientFound, setUsePatientFound] = useState(false)
+  const [gender, setGender] = useState([])
   console.log("PR))))0000000", props)
   const formikRef = useRef()
-  useEffect(async () => {
-    console.log("props00000000000000000000000000", props);
-
-
-    if (props.testGroup) {
-
-      if (props.testGroup == "PNS") {
-        setHasPns(true)
-      } else if (props.testGroup == "NIPT") {
-        setHasNipt(true)
-      } else if (props.testGroup == "NBS") {
-        setHasNbs(true)
-      } else if (props.testGroup == "CYTO") {
-        setHasNipt(true)
-      }
-
-    }
-    if (props.sendBy && props.sendBy == "Link" && !props.isNew) {
-      props.getPatient_details(props.patient)
-    }
-
-    if (props.formValues.test_info && !maxAge) {
+  const getDataFromTest = () => {
+    if (props.formValues.test_info && !maxAge && gender.length <= 0) {
       let maxxAge = null
-
+      let genderValidation = null
       props.formValues.test_info.selectedTests.map((test) => {
+        if (!genderValidation) {
+          genderValidation = test.sex
+        } else if ((genderValidation.length > 1) && test.sex.length < genderValidation) {
+          genderValidation = test.sex
+        } else if (test.sex.length == 1) {
+          genderValidation = test.sex
+        } else if ((genderValidation.length > 1) && test.sex.length == genderValidation) {
+          let temp = []
+          test.sex.map((sex, id) => {
+            if (genderValidation[id] == sex) {
+              temp.push(sex)
+            }
+          })
+          genderValidation = temp
+        }
         if (test.sub_group != "Both") {
           setTestGroup(test.sub_group)
         }
@@ -124,8 +120,32 @@ const PatientForm = (props) => {
         }
       })
       console.log(maxxAge, "maxage")
+      let temp = []
+      genderValidation.map((data) => {
+        temp.push(data.toLowerCase())
+      })
+      console.log("GENDER VALIDATION", genderValidation, temp)
+      setGender(temp)
       setMaxAge(maxxAge)
     }
+  }
+  useEffect(async () => {
+    console.log("props00000000000000000000000000", props);
+    if (props.testGroup) {
+      if (props.testGroup == "PNS") {
+        setHasPns(true)
+      } else if (props.testGroup == "NIPT") {
+        setHasNipt(true)
+      } else if (props.testGroup == "NBS") {
+        setHasNbs(true)
+      } else if (props.testGroup == "CYTO") {
+        setHasNipt(true)
+      }
+    }
+    if (props.sendBy && props.sendBy == "Link" && !props.isNew) {
+      props.getPatient_details(props.patient)
+    }
+    getDataFromTest()
     if (props.dynamicPatient.dateOfBirth && !ageInYears) {
       setAgeInYMD(props.dynamicPatient.dateOfBirth)
       if (props.dynamicPatient.fathersName) {
@@ -834,15 +854,15 @@ const PatientForm = (props) => {
                           if (!values.mothersDateOfBirth) {
                           }
                           if (values.mothersDateOfBirth) {
-                            const diff = moment(values.mothersDateOfBirth).diff(moment().format("YYYY-MM-DD"), "days")
-                            if (diff >= 0) {
-                              errors.mothersDateOfBirth = "Invalid Date"
+                            // const diff = moment(values.mothersDateOfBirth).diff(moment().format("YYYY-MM-DD"), "days")
+                            // if (diff >= 0) {
+                            //   errors.mothersDateOfBirth = "Invalid Date"
+                            // }
+                            const diff2 = moment(moment().format("YYYY-MM-DD")).diff(values.mothersDateOfBirth, "days")
+                            if (diff2 < 18) {
+                              errors.mothersDateOfBirth = "Age should be more than 18 Years"
                             }
                           }
-                          if (!values.mothersLastName) {
-                          }
-
-
                           if ([null, '', false].includes(values.weight)) {
                           } else if (values.weight >= 10) {
                             errors.weight = "Weight should be less than 10kg"
@@ -891,6 +911,10 @@ const PatientForm = (props) => {
                           }
                         }
                         if (!values.gender) {
+                        } else {
+                          if (!gender.includes(values.gender)) {
+                            errors.gender = values.gender + " is not a valid gender for this test"
+                          }
                         }
                         if (values.email) {
 
@@ -1121,9 +1145,13 @@ const PatientForm = (props) => {
                             errors.mothersDateOfBirth = "Required"
                           }
                           if (values.mothersDateOfBirth) {
-                            const diff = moment(values.mothersDateOfBirth).diff(moment().format("YYYY-MM-DD"), "days")
-                            if (diff >= 0) {
-                              errors.mothersDateOfBirth = "Invalid Date"
+                            const diff = moment(moment().format("YYYY-MM-DD")).diff(values.mothersDateOfBirth, "days")
+                            // if (diff >= 0) {
+                            //   errors.mothersDateOfBirth = "Invalid Date"
+                            // }
+                            const diff2 = moment(moment().format("YYYY-MM-DD")).diff(values.mothersDateOfBirth, "days")
+                            if (diff2 < 18) {
+                              errors.mothersDateOfBirth = "Age should be more than 18 Years"
                             }
                           }
                           if (!values.mothersLastName) {
@@ -1131,7 +1159,7 @@ const PatientForm = (props) => {
                           }
 
 
-                          if (!values.weight) {
+                          if ([null, '', false].includes(values.weight)) {
                             errors.weight = "Required"
                           } else if (values.weight >= 10) {
                             errors.weight = "Weight should be less than 10kg"
@@ -1179,7 +1207,7 @@ const PatientForm = (props) => {
                         if (!hasNbs) {
 
                           if (!values.husbandsOrFathersName) {
-                            errors.husbandsOrFathersName = "Required";
+
                           }
                           else if (!/^[a-zA-Z ]+$/.test(values.husbandsOrFathersName)) {
                             errors.husbandsOrFathersName = "Name should be in alphabets";
@@ -1187,6 +1215,10 @@ const PatientForm = (props) => {
                         }
                         if (!values.gender) {
                           errors.gender = "Required";
+                        } else {
+                          if (!gender.includes(values.gender)) {
+                            errors.gender = values.gender + " is not a valid gender for this test"
+                          }
                         }
                         if (values.email) {
 
@@ -1278,7 +1310,7 @@ const PatientForm = (props) => {
 
                         if (hasPns || hasNipt) {
 
-                          if (!values.height) {
+                          if ([null, '', false].includes(values.height)) {
                             errors.height = "Required";
                           }
                           else if (!Number(values.height)) {
@@ -1286,7 +1318,7 @@ const PatientForm = (props) => {
                           } else if (hasPns && (values.height < 61 || values.height > 198)) {
                             errors.height = "Height should be between 61cm and 198cm"
                           }
-                          if (!values.weight) {
+                          if ([null, '', false].includes(values.weight)) {
                             errors.weight = "Required";
                           }
                           else if (!Number(values.weight)) {
@@ -1604,63 +1636,60 @@ const PatientForm = (props) => {
                                     name="hospitalId"
                                     title="Hospital ID/Unique ID"
                                   />
+                                  {!hasNbs &&
 
-                                  <RadioField
-                                    name="salutation"
-                                    title={"Title"}
-                                    mandatory={false}
-                                    options={[{ value: "Mrs", label: "Mrs" }, { value: "Ms", label: "Ms" },
-                                    { value: "Mr", label: "Mr" }, { value: "Master", label: "Master" },
-                                    { value: "B/O", label: "B/O" }]}
-                                  />
+                                    <RadioField
+                                      name="salutation"
+                                      title={"Title"}
+                                      mandatory={false}
+                                      options={[{ value: "Mrs", label: "Mrs" }, { value: "Ms", label: "Ms" },
+                                      { value: "Mr", label: "Mr" }]}
+                                    />
+                                  }
                                 </div>
 
 
                                 {hasNbs &&
                                   <RadioField
                                     name="hasBabyName"
-                                    title={values.gender == "m" ? "Has master been Named?" : "Has Baby been Named?"}
+                                    title={"Has Infant been named?"}
                                     mandatory={true}
                                     options={[{ value: "true", label: "Yes" },
                                     { value: "false", label: "No" }]}
                                   />
 
                                 }
-                                <div className="row">
+                                <div className="row" >
                                   {(hasNbs && values.hasBabyName) && (<>
+                                    <div className="row" style={{ width: "100%" }}>
 
+                                      <DisplayFields
+                                        title="Title"
+                                        data={values.hasBabyName == "true" ? (values.gender == "female" ? "Baby" : "Master") : "Baby Of"}
+                                        className="col-md-2"
+                                        clinical_info={true}
+                                      />
 
-                                    {
-                                      values.hasBabyName == "true" ?
-                                        <>
-                                          <div className="col-md-2 col-12">
-                                            <label style={{ paddingTop: "30px" }}>{values.gender == "f" ? "Baby" : "Master"}</label>
-                                          </div>
-                                        </>
-                                        : <>
-                                          <div className="col-md-2 col-12">
-                                            <label style={{ paddingTop: "30px" }}>Baby of</label>
-                                          </div>
-                                        </>
-                                    }
-                                    <TextField
-                                      name="firstName"
-                                      title="First Name"
-                                      mandatory={true}
-                                      placeholder="Enter first name"
-                                      disabled={patientFound && !usePatientFound}
-                                      className={"col-md-5 col-12"}
-                                    />
+                                      <TextField
+                                        name="firstName"
+                                        title="First Name"
+                                        mandatory={true}
+                                        placeholder="Enter first name"
+                                        disabled={patientFound && !usePatientFound}
+                                        className={"col-md-5"}
+                                      />
 
-                                    <TextField
-                                      name="lastName"
-                                      title="Last Name"
-                                      mandatory={hasNbs ? false : true}
-                                      placeholder="Enter last name"
-                                      disabled={patientFound && !usePatientFound}
-                                      className={"col-md-5 col-12"}
-                                    />
+                                      <TextField
+                                        name="lastName"
+                                        title="Last Name"
+                                        mandatory={hasNbs ? false : true}
+                                        placeholder="Enter last name"
+                                        disabled={patientFound && !usePatientFound}
+                                        className={"col-md-5"}
+                                      />
+                                    </div>
                                   </>
+
                                   )
                                   }
                                   {
@@ -1693,14 +1722,27 @@ const PatientForm = (props) => {
                                     title="Contact Number"
                                     mandatory={true}
                                     placeholder="Enter Contact Number"
+                                    disabled={(props.new ? false : true) || (patientFound && !usePatientFound)}
                                   />
 
-
+                                  {
+                                    hasNbs &&
+                                    <RadioField
+                                      title="Gender"
+                                      name="gender"
+                                      mandatory={true}
+                                      options={[{ value: "male", label: "Male" },
+                                      { value: "female", label: "Female" },
+                                      { value: "other", label: "Other" }
+                                      ]}
+                                      disabled={patientFound && !usePatientFound}
+                                    />
+                                  }
                                 </div>
 
-                                {(!props.new ||
+                                {((!props.new &&
                                   props.formValues.collectionLocation.location !=
-                                  "Home" || props.sendBy && props.sendBy == "Link") && (
+                                  "Home") || props.sendBy && props.sendBy == "Link") && (
                                     <>
 
                                       <div className="row">
@@ -1709,7 +1751,7 @@ const PatientForm = (props) => {
                                           title="Age In"
                                           mandatory={true}
                                           options={[{ label: "Date Of birth", value: "dob" },
-                                          { label: "Years,Months,days", value: "ageInYMD" }]}
+                                          { label: "Years-Months-days", value: "ageInYMD" }]}
                                         />
 
                                         {values.ageType == "ageInYMD" &&
@@ -1752,22 +1794,25 @@ const PatientForm = (props) => {
                                           values.ageType == "dob" &&
                                           <DateFieldComponent
                                             name="dateOfBirth"
-                                            title={hasNbs ? "Baby`'s Date of Birth" : "Date of Birth"}
+                                            title={hasNbs ? "Infant's Date of Birth" : "Date of Birth"}
                                             max={moment().format("YYYY-MM-DD")}
                                             mandatory={true}
                                           />
 
                                         }
-                                        <RadioField
-                                          title="Gender"
-                                          name="gender"
-                                          mandatory={true}
-                                          options={[{ value: "m", label: "Male" },
-                                          { value: "f", label: "Female" },
-                                          { value: "o", label: "Other" }
-                                          ]}
-                                          disabled={patientFound && !usePatientFound}
-                                        />
+                                        {!hasNbs &&
+
+                                          <RadioField
+                                            title="Gender"
+                                            name="gender"
+                                            mandatory={true}
+                                            options={[{ value: "male", label: "Male" },
+                                            { value: "female", label: "Female" },
+                                            { value: "other", label: "Other" }
+                                            ]}
+                                            disabled={patientFound && !usePatientFound}
+                                          />
+                                        }
                                       </div>
                                       {
                                         hasNbs &&
@@ -1853,7 +1898,6 @@ const PatientForm = (props) => {
                                             <TextField
                                               name="husbandsOrFathersName"
                                               title="Husband's/Father Name"
-                                              mandatory={true}
                                               placeholder="Enter Husband's/Father Name"
                                               disabled={patientFound && !usePatientFound}
                                             />
@@ -1980,46 +2024,6 @@ const PatientForm = (props) => {
                                             disabled={patientFound && !usePatientFound}
 
                                           />
-                                          {/* <div className="col-md-6 col-12">
-                                            <div className="form-group">
-                                              <label>
-                                                Weight (in kg){" "}
-                                                <span className="marked">*</span>
-                                              </label>
-                                              <Field
-                                                type="number"
-                                                name="weight"
-                                                onKeyDown={(e) => ["e", "`", "#", "E", "+", "-"].includes(e.key) && e.preventDefault()}
-
-                                                placeholder="Enter Weight"
-                                                className="form-control"
-                                              />
-                                              <ErrorMessage
-                                                name="weight"
-                                                component="div"
-                                                className="formErr"
-                                              />
-                                            </div>
-                                          </div> */}
-                                          {/* <div className="col-md-6 col-12">
-                                            <div className="form-group">
-                                              <label>
-                                                Height (in cm){" "}
-                                                <span className="marked">*</span>
-                                              </label>
-                                              <Field
-                                                type="text"
-                                                name="height"
-                                                placeholder="Enter Height"
-                                                className="form-control"
-                                              />
-                                              <ErrorMessage
-                                                name="height"
-                                                component="div"
-                                                className="formErr"
-                                              />
-                                            </div>
-                                          </div> */}
                                         </div>
                                       }
 
@@ -2036,43 +2040,6 @@ const PatientForm = (props) => {
                                           />
 
 
-                                          {/* <div className="col-md-6 col-12">
-
-                                            <div className="form-group">
-                                              <label className="mb-3">
-                                                Smoking <span className="marked">*</span>
-                                              </label>
-                                              <br />
-                                              <div className="pretty p-default p-round">
-                                                <Field
-                                                  type="radio"
-                                                  name="smoking"
-                                                  value="true"
-
-                                                />
-                                                <div className="state">
-                                                  <label>Yes</label>
-                                                </div>
-                                              </div>
-
-                                              <div className="pretty p-default p-round">
-                                                <Field
-                                                  type="radio"
-                                                  name="smoking"
-                                                  value="false"
-
-                                                />
-                                                <div className="state">
-                                                  <label>No</label>
-                                                </div>
-                                              </div>
-                                              <ErrorMessage
-                                                name="smoking"
-                                                component="div"
-                                                className="formErr"
-                                              />
-                                            </div>
-                                          </div> */}
                                           <RadioField
                                             title="Folic Acid Intake"
                                             name="folicAcidIntake"
@@ -2082,43 +2049,7 @@ const PatientForm = (props) => {
                                             disabled={patientFound && !usePatientFound}
 
                                           />
-                                          {/* <div className="col-md-6 col-12">
-                                            <div className="form-group">
-                                              <label className="mb-3">
-                                                Folic Acid Intake{" "}
 
-                                              </label>
-                                              <br />
-                                              <div className="pretty p-default p-round">
-                                                <Field
-                                                  type="radio"
-                                                  name="folicAcidIntake"
-                                                  value="true"
-
-                                                />
-                                                <div className="state">
-                                                  <label>Yes</label>
-                                                </div>
-                                              </div>
-
-                                              <div className="pretty p-default p-round">
-                                                <Field
-                                                  type="radio"
-                                                  name="folicAcidIntake"
-                                                  value="false"
-
-                                                />
-                                                <div className="state">
-                                                  <label>No</label>
-                                                </div>
-                                              </div>
-                                              <ErrorMessage
-                                                name="folicAcidIntake"
-                                                component="div"
-                                                className="formErr"
-                                              />
-                                            </div>
-                                          </div> */}
                                         </div>
                                       }
                                     </>
@@ -2134,24 +2065,8 @@ const PatientForm = (props) => {
                                   title="Contact Number"
                                   mandatory={true}
                                   placeholder="Enter Contact Number"
-                                  disabled={patientFound && !usePatientFound}
+                                  disabled={(props.new ? false : true) || (patientFound && !usePatientFound)}
                                 />
-                                {/* <div className="form-group col-md-6 col-12">
-                                  <label>Contact Number: </label>
-                                  <Field
-                                    type="number"
-                                    name="contact"
-                                    // value={contact}
-                                    // onChange={handleOnChange}
-                                    placeholder="Enter contact Number"
-                                    className="form-control"
-                                  />
-                                  <ErrorMessage
-                                    name="contact"
-                                    component="div"
-                                    className="formErr"
-                                  />
-                                </div> */}
                                 <button
                                   onClick={handleSendFormLink}
                                   type="button"
@@ -2162,7 +2077,7 @@ const PatientForm = (props) => {
                                 </button>
                                 &nbsp;&nbsp;
                                 {isPatientInformationLinkSent &&
-                                  "Link is sent to a patient"}
+                                  "Link has been sent to patient"}
                               </div>
                             </>
                           )}
@@ -2175,14 +2090,14 @@ const PatientForm = (props) => {
                               <div className="col-md-2 col-2 text-left">
                                 <button
                                   onClick={e => Router.push("/super-dtrf")}
-                                  className="btn btn-primary mr-2"
+                                  className="btn btn-primary"
                                 >
                                   Exit
                                 </button>
                               </div>
                             }
-                            <div className="col-md-10 col-10 text-right ">
-                              <div className="formButttonCenter">
+                            <div className={props.fromSuperDtrf ? "col-md-10 col-10 text-right" : "col-md-12 col-12 text-right"}>
+                              <div className="formButtonCenter">
                                 <button
                                   onClick={handleOnClickPrevious}
                                   className="btn btn-primary mr-2"

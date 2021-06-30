@@ -444,11 +444,7 @@ const Confirmation = props => {
         if (!values.weight) {
           errors.weight = "Required";
         }
-      } else {
-        if (!values.husbandsOrFathersName) {
-          errors.husbandsOrFathersName = "Required";
-        }
-      }
+      } else {}
 
       if (hasPns || hasNipt) {
         if (!values.height) {
@@ -551,8 +547,8 @@ const Confirmation = props => {
       }
 
       if (!hasCyto) {
-        if (!values.scanDate) {
-          errors.scanDate = "Required";
+        if (!values.usgDate) {
+          errors.usgDate = "Required";
         }
 
         if (!values.currentGestationalAgeWeeks) {
@@ -644,6 +640,14 @@ const Confirmation = props => {
         if (!values.twinCrl2) {
           errors.twinCrl2 = "Required";
         }
+
+        if (!values.twinNt1) {
+          errors.twinNt1 = "Required";
+        }
+
+        if (!values.twinNt2) {
+          errors.twinNt2 = "Required";
+        }
       }
 
       if (testTrimester == "Second") {
@@ -653,48 +657,70 @@ const Confirmation = props => {
       }
 
       if (hasPreEclampsiaTest) {
-        if (!values.bpMeasurementDate) {
-          errors.bpMeasurementDate = "Required";
+        if (!values.bpOrMap) {
+          errors.bpOrMap = "Required";
+        } else {
+          if (values.bpOrMap == "BP") {
+            if (!values.bpMeasurementDate) {
+              errors.bpMeasurementDate = "Required";
+            }
+
+            if (!values.bpLeftSystolic1) {
+              errors.bpLeftSystolic1 = "Required";
+            }
+
+            if (!values.bpLeftDiSystolic1) {
+              errors.bpLeftDiSystolic1 = "Required";
+            }
+
+            if (!values.bpLeftSystolic2) {
+              errors.bpLeftSystolic2 = "Required";
+            }
+
+            if (!values.bpLeftDiSystolic2) {
+              errors.bpLeftDiSystolic2 = "Required";
+            }
+
+            if (!values.bpRightSystolic1) {
+              errors.bpRightSystolic1 = "Required";
+            }
+
+            if (!values.bpRightDiSystolic1) {
+              errors.bpRightDiSystolic1 = "Required";
+            }
+
+            if (!values.bpRightSystolic2) {
+              errors.bpRightSystolic2 = "Required";
+            }
+
+            if (!values.bpRightDiSystolic2) {
+              errors.bpRightDiSystolic2 = "Required";
+            }
+          } else if (values.bpOrMap == "MAP") {
+            if (!values.mapReading1) {
+              errors.mapReading1 = "Required";
+            }
+
+            if (!values.mapReading2) {
+              errors.mapReading2 = "Required";
+            }
+          }
         }
 
-        if (!values.bpLeftSystolic1) {
-          errors.bpLeftSystolic1 = "Required";
+        if (!values.familyHistoryPreEclampsia) {
+          errors.familyHistoryPreEclampsia = "Required";
         }
 
-        if (!values.bpLeftDiSystolic1) {
-          errors.bpLeftDiSystolic1 = "Required";
+        if (!values.chronicHypertension) {
+          errors.chronicHypertension = "Required";
         }
 
-        if (!values.bpLeftSystolic2) {
-          errors.bpLeftSystolic2 = "Required";
+        if (!values.uterineArteryPulsativeIndexRightPI) {
+          errors.uterineArteryPulsativeIndexRightPI = "Required";
         }
 
-        if (!values.bpLeftDiSystolic2) {
-          errors.bpLeftDiSystolic2 = "Required";
-        }
-
-        if (!values.bpRightSystolic1) {
-          errors.bpRightSystolic1 = "Required";
-        }
-
-        if (!values.bpRightDiSystolic1) {
-          errors.bpRightDiSystolic1 = "Required";
-        }
-
-        if (!values.bpRightSystolic2) {
-          errors.bpRightSystolic2 = "Required";
-        }
-
-        if (!values.bpRightDiSystolic2) {
-          errors.bpRightDiSystolic2 = "Required";
-        }
-
-        if (!values.mapReading1) {
-          errors.mapReading1 = "Required";
-        }
-
-        if (!values.mapReading2) {
-          errors.mapReading2 = "Required";
+        if (!values.uterineArteryPulsativeIndexLeftPI) {
+          errors.uterineArteryPulsativeIndexLeftPI = "Required";
         }
 
         if (!values.familyHistoryPreEclampsia) {
@@ -891,6 +917,17 @@ const Confirmation = props => {
         }
       }
     });
+
+    if (hasNipt) {
+      props.fileUpload.pcpndtFiles.map(data => {
+        if (data.scans) {
+          if (data.scans.length <= 0) {
+            errors.pcpndtFiles = "Required";
+          }
+        }
+      });
+    }
+
     console.log("ERRORS IN FILE", errors);
 
     if (!(Object.keys(errors).length === 0 && errors.constructor === Object)) {
@@ -997,10 +1034,10 @@ const Confirmation = props => {
       if (response.status == 200) {
         (0, _commonHelper.successMessage)("Form Data Saved");
       } else {
-        errorMessage("Error in Saving Form");
+        (0, _commonHelper.errorMessage)("Error in Saving Form");
       }
     } else {
-      errorMessage("Error in Saving Form");
+      (0, _commonHelper.errorMessage)("Error in Saving Form");
     }
 
     console.log("INCOMEPLETE FORMDATA SEND", response);
@@ -1030,7 +1067,7 @@ const Confirmation = props => {
 
       _router.default.push("/super-dtrf");
     } else {
-      return errorMessage("Error in submitting to BDM");
+      return (0, _commonHelper.errorMessage)("Error in submitting to BDM");
     }
   }; // !!!!!~~~~~~~~~~~~~~~~~~~~~~~~ADMIN PANEL CODE CLOSE ~~~~~~~~~~~~~~~~!!!!!!!!!!!!!!!!!
 
@@ -1132,12 +1169,12 @@ const Confirmation = props => {
             setShowLoader(false);
             setShowPrevious(true);
             setLinkedSent(false);
-            return errorMessage("Patient Rejected");
+            return (0, _commonHelper.errorMessage)("Patient Rejected");
           }
 
           if (response.data.message == "Pending") {
             setShowLoader(false);
-            return errorMessage("Patent Confirmation Pending");
+            return (0, _commonHelper.infoMessage)("Patent Confirmation Pending");
           }
         }
 
@@ -1146,12 +1183,12 @@ const Confirmation = props => {
           setSubmitted(true);
           return setModalShow(true);
         } else {
-          return errorMessage(response.data.message);
+          return (0, _commonHelper.infoMessage)(response.data.message);
         }
       }
     } else {
       setShowLoader(false);
-      errorMessage("Error in Submitting");
+      (0, _commonHelper.errorMessage)("Error in Submitting");
     }
 
     console.log(response);
@@ -1197,10 +1234,6 @@ const Confirmation = props => {
   }; // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!~~~CLOSE!!!!!!!!!!!!!~!~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-  const errorMessage = msg => {
-    _antd.message.error(msg);
-  };
-
   console.log("formvalues", formValues);
   return /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_reactBootstrap.Modal, {
     show: modalShow,
@@ -1228,7 +1261,7 @@ const Confirmation = props => {
     variant: "primary",
     type: "submit",
     onClick: handleOkayButtonClick
-  }, "Okay")))), props.fromSuperDtrf && /*#__PURE__*/_react.default.createElement("div", {
+  }, "Okay")))), props.fromSuperDtrf && !props.Token.isComplete && /*#__PURE__*/_react.default.createElement("div", {
     className: "row"
   }, /*#__PURE__*/_react.default.createElement("div", {
     className: "col-md-12 col-12 text-right"
@@ -1260,7 +1293,7 @@ const Confirmation = props => {
     style: {
       padding: "5px 20px"
     }
-  }, !showLoader && /*#__PURE__*/_react.default.createElement("button", {
+  }, !showLoader && showPrevious && /*#__PURE__*/_react.default.createElement("button", {
     onClick: handleOnClickPrevious,
     className: "btn btn-primary mr-2",
     type: "button"
@@ -1272,22 +1305,35 @@ const Confirmation = props => {
     onClick: handleOnClickBDM,
     className: "btn btn-primary mr-2",
     type: "button"
-  }, "Send to BDM")), confirmationByPatient ? /*#__PURE__*/_react.default.createElement("button", {
+  }, "Send to BDM")), confirmationByPatient ? /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, linkedSent ? /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("button", {
     type: "button",
-    className: "btn btn-primary",
+    className: "btn btn-primary mr-2",
     disabled: submitted,
     onClick: tempOnSubmit,
     name: "sendLink"
-  }, "Send Link") : showLoader ? /*#__PURE__*/_react.default.createElement(_antd.Spin, {
-    indicator: antIcon
-  }) : /*#__PURE__*/_react.default.createElement("button", {
+  }, "Resend Link"), /*#__PURE__*/_react.default.createElement("button", {
     disabled: submitted,
     type: "button",
-    className: "btn btn-primary",
+    className: "btn btn-primary mr-2",
+    name: "sendDtrf" // onClick={onSubmit}
+    ,
+    onClick: tempOnSubmit
+  }, "Submit Dtrf")) : /*#__PURE__*/_react.default.createElement("button", {
+    type: "button",
+    className: "btn btn-primary mr-2",
+    disabled: submitted,
+    onClick: tempOnSubmit,
+    name: "sendLink"
+  }, "Send Link")) : showLoader ? /*#__PURE__*/_react.default.createElement(_antd.Spin, {
+    indicator: antIcon
+  }) : /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, (props.fromDtrfFront || !props.Token.isComplete) && /*#__PURE__*/_react.default.createElement("button", {
+    disabled: submitted,
+    type: "button",
+    className: "btn btn-primary mr-2",
     name: "submit" // onClick={onSubmit}
     ,
     onClick: tempOnSubmit
-  }, "Submit DTRF")))));
+  }, "Submit DTRF"))))));
 };
 
 const mapStateToProps = state => ({

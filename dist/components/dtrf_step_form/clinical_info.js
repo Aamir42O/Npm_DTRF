@@ -111,13 +111,13 @@ const ClinicalHistory = props => {
   const [fileUploadReference, setFileUploadReference] = (0, _react.useState)([]);
   const [containers, setContainers] = (0, _react.useState)(null);
 
-  const handleReferrenceDoctorChange = async doctor => {
+  const handleReferrenceDoctorChange = async (doctor, from) => {
     console.log("DOCOTOR ", doctor.length > 2);
     console.log("INSIDE", process.env.NEXT_PUBLIC_ALL_REFERRAL_DOCTORS);
 
     if (doctor.length > 2) {
       console.log("INSIDE", process.env.NEXT_PUBLIC_ALL_REFERRAL_DOCTORS);
-      let url = "".concat(process.env.NEXT_PUBLIC_ALL_REFERRAL_DOCTORS, "?searchquery=").concat(doctor);
+      let url = "".concat(process.env.NEXT_PUBLIC_ALL_DOCTORS, "?searchquery=").concat(doctor, "&").concat(from == "referringDoctor" ? "referring_doctor=1" : "sonographer=1");
       console.log("INSIDE condition", url);
       const resp = await (0, _Auth.default)(url, "GET");
       console.log(resp);
@@ -481,12 +481,51 @@ const ClinicalHistory = props => {
         } else {
           setPcpndtList(props.pcpndtFiles);
         }
+
+        let sampleList = [];
+
+        for (let i = 0; i < list.test_info.selectedTests.length; i++) {
+          const test = list.test_info.selectedTests[i];
+          sampleList.push({
+            sampleType: test.sampleType,
+            test_group: test.test_group
+          });
+        }
+
+        const getContainers = axios.post(process.env.NEXT_PUBLIC_GET_CONTAINERS, {
+          samples: sampleList
+        }).then(response => {
+          const containers = response.data.data.samples.map((e, i) => {
+            return e.containers && e.containers.display_container_name.map((container, id) => {
+              containerTypeList[i] = {
+                id,
+                value: container,
+                label: container
+              };
+              setSelectedContainerType(containerTypeList);
+              return {
+                id,
+                value: container,
+                label: container
+              };
+            });
+          });
+          setContainers(containers);
+          console.log("$$$$$$$$$$$$$$$$\n", containers);
+        }).catch(error => {
+          console.log(error);
+        });
       }
     }
   };
 
   const handleCytoContainerIdChange = (e, id) => {
     containerId[id].value = e.target.value;
+
+    if (containerIdErrors[id]) {
+      containerIdValidationList[id] = false;
+      setContainerIdValidationList[containerIdValidationList];
+    }
 
     if (e.target.value.split("").length < 5) {
       containerIdValidationList[id] = true;
@@ -921,10 +960,10 @@ const ClinicalHistory = props => {
     let allowedFiles = new RegExp("application/pdf|image|image/jpeg");
     let xmlFormat = new RegExp("text/xml");
     files.map((file, id) => {
-      if (file.size > 3000000) {
+      if (file.size > 15000000) {
         const afterRemove = [...files.slice(0, id), ...files.slice(id + 1)];
         files = afterRemove;
-        (0, _commonHelper.errorMessage)(file.name + " size is greater than 3mb");
+        (0, _commonHelper.errorMessage)(file.name + " size is greater than 15 mb");
       }
 
       if (!allowedFiles.exec(file.type) && e.target.name != "xmlLicenseFile") {
@@ -1140,13 +1179,6 @@ const ClinicalHistory = props => {
     });
 
     if (!errors.hasOwnProperty("error")) {
-      if (!hasNbs) {// if (pcpndtFiles.length > 0) {
-        //   props.getPcpndtFiles(pcpndtFiles)
-        // } else {
-        //   // props.getPcpndtFiles([])
-        // }
-      }
-
       console.log("ERRORS FROM FORMIKREF", firstFormikRef.current.errors);
 
       if (Object.keys(firstFormikRef.current.errors).length === 0 && firstFormikRef.current.errors.constructor === Object) {
@@ -1170,6 +1202,13 @@ const ClinicalHistory = props => {
           if (!hasNbs) {
             formValues.currentGestationalAgeWeeks = currentGestWeeks;
             formValues.currentGestationalAgeDays = currentGestDays;
+          }
+
+          if (hasNbs) {
+            const deliveryStatus = formValues.deliveryStatus.label;
+            const typeOfFeeding = formValues.typeOfFeeding.label;
+            formValues.deliveryStatus = deliveryStatus;
+            formValues.typeOfFeeding = typeOfFeeding;
           }
 
           handleOnClickNext(formValues);
@@ -1234,7 +1273,6 @@ const ClinicalHistory = props => {
       lmpDate: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.lmpDate : "",
       usgCorrEddDate: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.usgCorrEddDate : "",
       lmpCertainity: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.lmpCertainity : "",
-      // parity: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.parity : "",
       Gravida: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.Gravida : "",
       Para: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.Para : "",
       Abortion: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.Abortion : "",
@@ -1245,7 +1283,6 @@ const ClinicalHistory = props => {
       insulinDate: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.insulinDate : "",
       gestational: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.gestational : "",
       patientOnHcg: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.patientOnHcg : "",
-      // hcgIntakeDate: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.hcgIntakeDate : "",
       bleedingOrSpottingTwoWeeks: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.bleedingOrSpottingTwoWeeks : "",
       typeOfConception: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.typeOfConception : "",
       typeOfProcedure: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.typeOfProcedure : "",
@@ -1267,6 +1304,7 @@ const ClinicalHistory = props => {
       hc: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.hc : "",
       nt: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.nt : "",
       crl: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.crl : "",
+      bpOrMap: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.bpOrMap : "",
       bpMeasurementDate: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.bpMeasurementDate : "",
       bpLeftSystolic1: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.bpLeftSystolic1 : "",
       bpLeftDiSystolic1: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.bpLeftDiSystolic1 : "",
@@ -1289,15 +1327,21 @@ const ClinicalHistory = props => {
       referralReason: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.referralReason : [],
       consanguinity: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.consanguinity : "",
       instituteLocation: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.instituteLocation : "",
-      scanDate: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.scanDate : "",
+      usgDate: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.usgDate : "",
       sampleCollectionDate: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.sampleCollectionDate : "",
       currentGestationalAgeWeeks: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.currentGestationalAgeWeeks : "",
       currentGestationalAgeDays: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.currentGestationalAgeDays : "",
       additionalSymptoms: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.additionalSymptoms : "",
-      deliveryStatus: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.deliveryStatus : "",
+      deliveryStatus: props.formDataRedux.medical_info ? {
+        value: props.formDataRedux.medical_info.medical_info.deliveryStatus,
+        label: props.formDataRedux.medical_info.medical_info.deliveryStatus
+      } : "",
+      typeOfFeeding: props.formDataRedux.medical_info ? {
+        value: props.formDataRedux.medical_info.medical_info.typeOfFeeding,
+        label: props.formDataRedux.medical_info.medical_info.typeOfFeeding
+      } : "",
       hoTransfusion: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.hoTransfusion : "",
       dateOfHoTransfusion: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.dateOfHoTransfusion : "",
-      typeOfFeeding: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.typeOfFeeding : "",
       firstFeedingDate: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.firstFeedingDate : "",
       monochorionicType: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.monochorionicType : "",
       historyOfPatauSyndrome: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.historyOfPatauSyndrome : "",
@@ -1305,11 +1349,10 @@ const ClinicalHistory = props => {
       confirmatoryTestHES: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.confirmatoryTestHES : "",
       confirmatoryTestHPS: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.confirmatoryTestHPS : "",
       timeOfDiabetes: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.timeOfDiabetes : "",
-      // referralReason: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.referralReason : "",
       advanceMaternalAge: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.advanceMaternalAge : "",
       geneticDiseaseInFMS: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.geneticDiseaseInFMS : "",
       Others: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.Others : "",
-      fmlId: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.fmlId : ""
+      fmfId: props.formDataRedux.medical_info ? props.formDataRedux.medical_info.medical_info.fmfId : ""
     },
     validate: values => {
       const errors = {};
@@ -1320,20 +1363,20 @@ const ClinicalHistory = props => {
           if (!values.sampleCollectionDate) {}
 
           if (!hasCyto) {
-            if (!values.scanDate) {}
+            if (!values.usgDate) {}
 
-            if (values.scanDate) {
-              const diff = (0, _moment.default)(values.scanDate).diff((0, _moment.default)().format("YYYY-MM-DD"), "days");
-              console.log("scanDate DIFF", diff);
+            if (values.usgDate) {
+              const diff = (0, _moment.default)(values.usgDate).diff((0, _moment.default)().format("YYYY-MM-DD"), "days");
+              console.log("usgDate DIFF", diff);
 
               if (diff > 0) {
-                errors.scanDate = "Invalid Date";
+                errors.usgDate = "Invalid Date";
               }
 
-              const diff2 = (0, _moment.default)(values.scanDate).diff((0, _moment.default)().format("YYYY-MM-DD"), "days");
+              const diff2 = (0, _moment.default)(values.usgDate).diff((0, _moment.default)().format("YYYY-MM-DD"), "days");
 
               if (!(diff2 > -273)) {
-                errors.scanDate = "Scan date should not be more than 9 month from todays date";
+                errors.usgDate = "Scan date should not be more than 9 month from todays date";
               }
             }
 
@@ -1349,8 +1392,8 @@ const ClinicalHistory = props => {
               }
             }
 
-            if (values.scanDate && values.sampleCollectionDate && ![null, '', false].includes(values.gestationalAgeDays) && ![null, '', false].includes(values.gestationalAgeWeeks)) {
-              const diff = (0, _moment.default)(values.sampleCollectionDate).diff((0, _moment.default)(values.scanDate), "days");
+            if (values.usgDate && values.sampleCollectionDate && ![null, '', false].includes(values.gestationalAgeDays) && ![null, '', false].includes(values.gestationalAgeWeeks)) {
+              const diff = (0, _moment.default)(values.sampleCollectionDate).diff((0, _moment.default)(values.usgDate), "days");
               let days = diff + values.gestationalAgeDays;
               let weeks = values.gestationalAgeWeeks;
               console.log("Diff In Dates", weeks, days);
@@ -1370,7 +1413,7 @@ const ClinicalHistory = props => {
               console.log("Formatted weeks and days", weeks, days);
             }
 
-            if (values.sampleCollectionDate && values.scanDate) {
+            if (values.sampleCollectionDate && values.usgDate) {
               if ([null, '', false].includes(currentGestDays)) {}
 
               if (!currentGestWeeks) {}
@@ -1478,7 +1521,7 @@ const ClinicalHistory = props => {
             if (!values.confirmatoryTestHPS) {}
           }
 
-          if (values.sampleCollectionDate && values.scanDate) {
+          if (values.sampleCollectionDate && values.usgDate) {
             if (currentGestWeeks > gestationAgeEnd || currentGestWeeks < gestationAgeStart) {
               errors.currentGestationalAgeWeeks = "Weeks should be between " + gestationAgeStart + " - " + parseInt(gestationAgeEnd);
             } else if (!/^[0-9\b]+$/.test(currentGestWeeks)) {
@@ -1752,21 +1795,7 @@ const ClinicalHistory = props => {
 
           if (!values.patientOnHcg) {}
 
-          if (values.patientOnHcg == "Yes") {// if (!values.hcgIntakeDate) {
-            // }
-            // if (values.hcgIntakeDate) {
-            //   if (moment().diff(values.hcgIntakeDate, "days") == 0) {
-            //     errors.hcgIntakeDate = "Invalid date"
-            //   }
-            //   const date = moment().subtract(1, "days")
-            //   const yesterDayDate = moment(date).format("YYYY-MM-DD")
-            //   const diff = moment(yesterDayDate).diff(values.hcgIntakeDate, "days")
-            //   console.log("hcgIntakeDate", diff)
-            //   if (diff == 0) {
-            //   }
-            //     errors.hcgIntakeDate = "Yesterday date is not valid"
-            // }
-          }
+          if (values.patientOnHcg == "Yes") {}
 
           if (!values.typeOfConception) {}
 
@@ -1776,6 +1805,14 @@ const ClinicalHistory = props => {
             if (!values.extractionDate) {}
 
             if (!values.transferDate) {}
+
+            if (values.transferDate && values.extractionDate) {
+              const diff2 = (0, _moment.default)(values.transferDate).diff(values.extractionDate, "days");
+
+              if (diff2 < 0) {
+                errors.transferDate = "Date cant be before Extraction date";
+              }
+            }
 
             if (values.typeOfProcedure == "Donor Egg") {
               if (!values.donorDob) {}
@@ -1793,25 +1830,27 @@ const ClinicalHistory = props => {
           }
 
           if (testTrimester == "First") {
-            if (!values.crl) {} else if (hasPns && values.crl > 85) {
-              errors.crl = "CRL should be between 0 and 85";
-            } else if ((values.crl > 84 || values.crl < 45) && !hasPns) {
-              errors.crl = "CRL should be between 45 and 84";
-            } else if (!/^\s*-?\d+(\.\d{1,2})?\s*$/.test(values.crl)) {
-              errors.crl = "Max two digits allowed after decimal";
-            }
+            if (values.presentPregnancy != "Twins") {
+              if ([null, '', false].includes(values.crl)) {} else if (hasPns && values.crl > 85) {
+                errors.crl = "CRL should be between 0 and 85";
+              } else if ((values.crl > 84 || values.crl < 45) && !hasPns) {
+                errors.crl = "CRL should be between 45 and 84";
+              } else if (!/^\s*-?\d+(\.\d{1,2})?\s*$/.test(values.crl)) {
+                errors.crl = "Max two digits allowed after decimal";
+              }
 
-            if (!values.nt) {} else if (!/^\s*-?\d+(\.\d{1,2})?\s*$/.test(values.nt)) {
-              errors.nt = "Max two digits allowed after decimal";
-            } else if ("e".includes(values.nt)) {
-              errors.nt = "Only Numbers is allowed";
-            }
+              if ([null, '', false].includes(values.nt)) {} else if (!/^\s*-?\d+(\.\d{1,2})?\s*$/.test(values.nt)) {
+                errors.nt = "Max two digits allowed after decimal";
+              } else if ("e".includes(values.nt)) {
+                errors.nt = "Only Numbers is allowed";
+              }
 
-            if (!values.nb) {}
+              if (!values.nb) {}
+            }
           }
 
           if (values.presentPregnancy == "Twins") {
-            if (!values.twinCrl1) {} else if (!hasPns && (values.twinCrl1 >= 84 || values.twinCrl1 <= 45)) {
+            if ([null, '', false].includes(values.twinCrl1)) {} else if (!hasPns && (values.twinCrl1 >= 84 || values.twinCrl1 <= 45)) {
               errors.twinCrl1 = "Value should be between 45 and 84";
             } else if (!/^\s*-?\d+(\.\d{1,2})?\s*$/.test(values.twinCrl1)) {
               errors.twinCrl1 = "Max two digits allowed after decimal";
@@ -1819,12 +1858,12 @@ const ClinicalHistory = props => {
               errors.twinCrl1 = "Value should be between 0 and 85";
             }
 
-            if (!values.twinCrl2) {} else if (!hasPns && (values.twinCrl2 >= 84 || values.twinCrl2 <= 45)) {
+            if ([null, '', false].includes(values.twinCrl2)) {} else if (!hasPns && (values.twinCrl2 >= 84 || values.twinCrl2 <= 45)) {
               errors.twinCrl2 = "Value should be between 45 and 84";
             } else if (!/^\s*-?\d+(\.\d{1,2})?\s*$/.test(values.twinCrl2)) {
               errors.twinCrl2 = "Max two digits allowed after decimal";
             } else if (hasPns && (values.twinCrl2 > 85 || values.twinCrl2 < 0)) {
-              errors.twinCrl1 = "Value should be between 0 and 85";
+              errors.twinCrl2 = "Value should be between 0 and 85";
             } // if (!values.twinNt1) {
             // }
             // if (!values.twinNt2) {
@@ -1891,22 +1930,22 @@ const ClinicalHistory = props => {
           }
 
           if (!hasCyto) {
-            if (!values.scanDate) {
-              errors.scanDate = "Required";
+            if (!values.usgDate) {
+              errors.usgDate = "Required";
             }
 
-            if (values.scanDate) {
-              const diff = (0, _moment.default)(values.scanDate).diff((0, _moment.default)().format("YYYY-MM-DD"), "days");
-              console.log("scanDate DIFF", diff);
+            if (values.usgDate) {
+              const diff = (0, _moment.default)(values.usgDate).diff((0, _moment.default)().format("YYYY-MM-DD"), "days");
+              console.log("usgDate DIFF", diff);
 
               if (diff > 0) {
-                errors.scanDate = "Invalid Date";
+                errors.usgDate = "Invalid Date";
               }
 
-              const diff2 = (0, _moment.default)(values.scanDate).diff((0, _moment.default)().format("YYYY-MM-DD"), "days");
+              const diff2 = (0, _moment.default)(values.usgDate).diff((0, _moment.default)().format("YYYY-MM-DD"), "days");
 
               if (!(diff2 > -273)) {
-                errors.scanDate = "Scan date should not be more than 9 month from todays date";
+                errors.usgDate = "Scan date should not be more than 9 month from todays date";
               }
             }
 
@@ -1922,8 +1961,8 @@ const ClinicalHistory = props => {
               }
             }
 
-            if (values.scanDate && values.sampleCollectionDate && ![null, '', false].includes(values.gestationalAgeDays) && ![null, '', false].includes(values.gestationalAgeWeeks)) {
-              const diff = (0, _moment.default)(values.sampleCollectionDate).diff((0, _moment.default)(values.scanDate), "days");
+            if (values.usgDate && values.sampleCollectionDate && ![null, '', false].includes(values.gestationalAgeDays) && ![null, '', false].includes(values.gestationalAgeWeeks)) {
+              const diff = (0, _moment.default)(values.sampleCollectionDate).diff((0, _moment.default)(values.usgDate), "days");
               let days = diff + values.gestationalAgeDays;
               let weeks = values.gestationalAgeWeeks;
               console.log("Diff In Dates", weeks, days);
@@ -1943,7 +1982,7 @@ const ClinicalHistory = props => {
               console.log("Formatted weeks and days", weeks, days);
             }
 
-            if (values.sampleCollectionDate && values.scanDate) {
+            if (values.sampleCollectionDate && values.usgDate) {
               if ([null, '', false].includes(currentGestDays)) {
                 errors.currentGestationalAgeDays = "Required";
               }
@@ -2078,7 +2117,7 @@ const ClinicalHistory = props => {
             }
           }
 
-          if (values.sampleCollectionDate && values.scanDate) {
+          if (values.sampleCollectionDate && values.usgDate) {
             if (currentGestWeeks > gestationAgeEnd || currentGestWeeks < gestationAgeStart) {
               errors.currentGestationalAgeWeeks = "Weeks should be between " + gestationAgeStart + " - " + parseInt(gestationAgeEnd);
             } else if (!/^[0-9\b]+$/.test(currentGestWeeks)) {
@@ -2447,6 +2486,14 @@ const ClinicalHistory = props => {
               errors.transferDate = "Required";
             }
 
+            if (values.transferDate && values.extractionDate) {
+              const diff2 = (0, _moment.default)(values.transferDate).diff(values.extractionDate, "days");
+
+              if (diff2 < 0) {
+                errors.transferDate = "Date cant be before Extraction date";
+              }
+            }
+
             if (values.typeOfProcedure == "Donor Egg") {
               if (!values.donorDob) {
                 errors.donorDob = "Required";
@@ -2465,29 +2512,33 @@ const ClinicalHistory = props => {
           }
 
           if (testTrimester == "First") {
-            if (!values.crl) {
-              errors.crl = "Required";
-            } else if (hasPns && values.crl > 85) {
-              errors.crl = "CRL should be between 45 and 85";
-            } else if ((values.crl > 84 || values.crl < 45) && !hasPns) {
-              errors.crl = "CRL should be between 45 and 84";
-            } else if (!/^\s*-?\d+(\.\d{1,2})?\s*$/.test(values.crl)) {
-              errors.crl = "Max two digits allowed after decimal";
-            }
+            if (values.presentPregnancy != "Twins") {
+              console.log("present pregnancy ", values.presentPregnancy);
 
-            if (!values.nt) {// errors.nt = "Required";
-            } else if (!/^\s*-?\d+(\.\d{1,2})?\s*$/.test(values.nt)) {
-              errors.nt = "Max two digits allowed after decimal";
-            } else if ("e".includes(values.nt)) {
-              errors.nt = "Only Numbers is allowed";
-            }
+              if ([null, '', false].includes(values.crl)) {
+                errors.crl = "Required";
+              } else if (hasPns && values.crl > 85) {
+                errors.crl = "CRL should be between 0 and 85";
+              } else if ((values.crl > 84 || values.crl < 45) && !hasPns) {
+                errors.crl = "CRL should be between 45 and 84";
+              } else if (!/^\s*-?\d+(\.\d{1,2})?\s*$/.test(values.crl)) {
+                errors.crl = "Max two digits allowed after decimal";
+              }
 
-            if (!values.nb) {// errors.nb = "Required";
+              if ([null, '', false].includes(values.nt)) {// errors.nt = "Required";
+              } else if (!/^\s*-?\d+(\.\d{1,2})?\s*$/.test(values.nt)) {
+                errors.nt = "Max two digits allowed after decimal";
+              } else if ("e".includes(values.nt)) {
+                errors.nt = "Only Numbers is allowed";
+              }
+
+              if (!values.nb) {// errors.nb = "Required";
+              }
             }
           }
 
           if (values.presentPregnancy == "Twins") {
-            if (!values.twinCrl1) {
+            if ([null, '', false].includes(values.twinCrl1)) {
               errors.twinCrl1 = "Required";
             } else if (!hasPns && (values.twinCrl1 >= 84 || values.twinCrl1 <= 45)) {
               errors.twinCrl1 = "Value should be between 45 and 84";
@@ -2497,21 +2548,23 @@ const ClinicalHistory = props => {
               errors.twinCrl1 = "Value should be between 0 and 85";
             }
 
-            if (!values.twinCrl2) {
+            if ([null, '', false].includes(values.twinCrl2)) {
               errors.twinCrl2 = "Required";
             } else if (!hasPns && (values.twinCrl2 >= 84 || values.twinCrl2 <= 45)) {
               errors.twinCrl2 = "Value should be between 45 and 84";
             } else if (!/^\s*-?\d+(\.\d{1,2})?\s*$/.test(values.twinCrl2)) {
               errors.twinCrl2 = "Max two digits allowed after decimal";
             } else if (hasPns && (values.twinCrl2 > 85 || values.twinCrl2 < 0)) {
-              errors.twinCrl1 = "Value should be between 0 and 85";
-            } // if (!values.twinNt1) {
-            //   errors.twinNt1 = "Required";
-            // }
-            // if (!values.twinNt2) {
-            //   errors.twinNt2 = "Required";
-            // }
-            // if (!values.twinNb1) {
+              errors.twinCrl2 = "Value should be between 0 and 85";
+            }
+
+            if (!values.twinNt1) {
+              errors.twinNt1 = "Required";
+            }
+
+            if (!values.twinNt2) {
+              errors.twinNt2 = "Required";
+            } // if (!values.twinNb1) {
             //   errors.twinNb1 = "Required";
             // }
             // if (!values.twinNb2) {
@@ -2537,48 +2590,54 @@ const ClinicalHistory = props => {
           }
 
           if (hasPreEclampsiaTest) {
-            if (!values.bpMeasurementDate) {
-              errors.bpMeasurementDate = "Required";
-            }
+            if (!values.bpOrMap) {
+              errors.bpOrMap = "Required";
+            } else {
+              if (values.bpOrMap == "BP") {
+                if (!values.bpMeasurementDate) {
+                  errors.bpMeasurementDate = "Required";
+                }
 
-            if (!values.bpLeftSystolic1) {
-              errors.bpLeftSystolic1 = "Required";
-            }
+                if (!values.bpLeftSystolic1) {
+                  errors.bpLeftSystolic1 = "Required";
+                }
 
-            if (!values.bpLeftDiSystolic1) {
-              errors.bpLeftDiSystolic1 = "Required";
-            }
+                if (!values.bpLeftDiSystolic1) {
+                  errors.bpLeftDiSystolic1 = "Required";
+                }
 
-            if (!values.bpLeftSystolic2) {
-              errors.bpLeftSystolic2 = "Required";
-            }
+                if (!values.bpLeftSystolic2) {
+                  errors.bpLeftSystolic2 = "Required";
+                }
 
-            if (!values.bpLeftDiSystolic2) {
-              errors.bpLeftDiSystolic2 = "Required";
-            }
+                if (!values.bpLeftDiSystolic2) {
+                  errors.bpLeftDiSystolic2 = "Required";
+                }
 
-            if (!values.bpRightSystolic1) {
-              errors.bpRightSystolic1 = "Required";
-            }
+                if (!values.bpRightSystolic1) {
+                  errors.bpRightSystolic1 = "Required";
+                }
 
-            if (!values.bpRightDiSystolic1) {
-              errors.bpRightDiSystolic1 = "Required";
-            }
+                if (!values.bpRightDiSystolic1) {
+                  errors.bpRightDiSystolic1 = "Required";
+                }
 
-            if (!values.bpRightSystolic2) {
-              errors.bpRightSystolic2 = "Required";
-            }
+                if (!values.bpRightSystolic2) {
+                  errors.bpRightSystolic2 = "Required";
+                }
 
-            if (!values.bpRightDiSystolic2) {
-              errors.bpRightDiSystolic2 = "Required";
-            }
+                if (!values.bpRightDiSystolic2) {
+                  errors.bpRightDiSystolic2 = "Required";
+                }
+              } else if (values.bpOrMap == "MAP") {
+                if (!values.mapReading1) {
+                  errors.mapReading1 = "Required";
+                }
 
-            if (!values.mapReading1) {
-              errors.mapReading1 = "Required";
-            }
-
-            if (!values.mapReading2) {
-              errors.mapReading2 = "Required";
+                if (!values.mapReading2) {
+                  errors.mapReading2 = "Required";
+                }
+              }
             }
 
             if (!values.familyHistoryPreEclampsia) {
@@ -2652,8 +2711,8 @@ const ClinicalHistory = props => {
       max: (0, _moment.default)().format("YYYY-MM-DD"),
       mandatory: true
     }), !hasCyto && /*#__PURE__*/_react.default.createElement(_DateField.default, {
-      name: "scanDate",
-      title: "Scan Date",
+      name: "usgDate",
+      title: "USG Date",
       max: (0, _moment.default)().format("YYYY-MM-DD"),
       mandatory: true
     }), /*#__PURE__*/_react.default.createElement("div", {
@@ -2721,7 +2780,7 @@ const ClinicalHistory = props => {
       value: prefilleReferrenceDoctor,
       getOptionLabel: e => e.name.firstName + " " + e.name.lastName,
       getOptionValue: e => e._id,
-      loadOptions: handleReferrenceDoctorChange,
+      loadOptions: e => handleReferrenceDoctorChange(e, 'referringDoctor'),
       onChange: handleReferenceDoctorNameChange // placeholder="Enter Test name"
       ,
       noOptionsMessage: () => 'Enter Doctor name'
@@ -2738,7 +2797,7 @@ const ClinicalHistory = props => {
       value: sonographerName,
       getOptionLabel: e => e.name.firstName + " " + e.name.lastName,
       getOptionValue: e => e._id,
-      loadOptions: handleReferrenceDoctorChange,
+      loadOptions: e => handleReferrenceDoctorChange(e, 'sonographer'),
       onChange: handleSonographerNameChange,
       noOptionsMessage: () => 'Enter Test name'
     }), /*#__PURE__*/_react.default.createElement("div", {
@@ -3036,8 +3095,8 @@ const ClinicalHistory = props => {
         label: "Vanishing Twin"
       }]
     })), (hasNipt || hasPns) && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, hasPns && /*#__PURE__*/_react.default.createElement(_TextField.default, {
-      title: "FML Id",
-      name: "fmlId",
+      title: "FMF Id",
+      name: "fmfId",
       placeholder: "",
       mandatory: false
     }), hasNipt && values.presentPregnancy == "Twins" && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_Radio.default, {
@@ -3208,7 +3267,7 @@ const ClinicalHistory = props => {
         value: "No",
         label: "No"
       }]
-    }), values.confirmatoryTestHDS == "No" && /*#__PURE__*/_react.default.createElement("div", {
+    }), values.historyOfDownSyndrome == "Yes" && values.confirmatoryTestHDS == "No" && /*#__PURE__*/_react.default.createElement("div", {
       className: "col-sm"
     }, /*#__PURE__*/_react.default.createElement("label", null, "We will not consider previous history of down syndrome for risk accessment")), /*#__PURE__*/_react.default.createElement(_Radio.default, {
       name: "historyOfEdwardsSyndrome",
@@ -3232,7 +3291,7 @@ const ClinicalHistory = props => {
         value: "No",
         label: "No"
       }]
-    }), values.confirmatoryTestHES == "No" && /*#__PURE__*/_react.default.createElement("div", {
+    }), values.historyOfEdwardsSyndrome == "Yes" && values.confirmatoryTestHES == "No" && /*#__PURE__*/_react.default.createElement("div", {
       className: "col-sm"
     }, /*#__PURE__*/_react.default.createElement("label", null, "We will not consider previous history of Edward's syndrome for risk accessment")), /*#__PURE__*/_react.default.createElement(_Radio.default, {
       name: "historyOfPatauSyndrome",
@@ -3256,7 +3315,7 @@ const ClinicalHistory = props => {
         value: "No",
         label: "No"
       }]
-    }), values.confirmatoryTestHPS == "No" && /*#__PURE__*/_react.default.createElement("div", {
+    }), values.historyOfPatauSyndrome == "Yes" && values.confirmatoryTestHPS == "No" && /*#__PURE__*/_react.default.createElement("div", {
       className: "col-sm"
     }, /*#__PURE__*/_react.default.createElement("label", null, "We will not consider previous history of Patau's syndrome for risk accessment")), /*#__PURE__*/_react.default.createElement(_Radio.default, {
       name: "diabetesInsulinDependent",
@@ -3480,14 +3539,7 @@ const ClinicalHistory = props => {
         value: "Absent",
         label: "Absent"
       }]
-    })), testTrimester == "Second" && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
-      className: "form-group col-12 col-md-12"
-    }, /*#__PURE__*/_react.default.createElement("label", {
-      style: {
-        paddingTop: "30px",
-        display: "flex"
-      }
-    }, "CRL :"), /*#__PURE__*/_react.default.createElement("hr", null)), /*#__PURE__*/_react.default.createElement(_NumberField.default, {
+    })), testTrimester == "Second" && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_NumberField.default, {
       title: "BPD (in mm) ",
       name: "bpd",
       mandatory: false,
@@ -3525,7 +3577,18 @@ const ClinicalHistory = props => {
       className: "formErr"
     })), /*#__PURE__*/_react.default.createElement("div", {
       className: "form-group col-12 col-md-12"
-    }, /*#__PURE__*/_react.default.createElement("hr", null))), hasPreEclampsiaTest && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_DateField.default, {
+    }, /*#__PURE__*/_react.default.createElement("hr", null))), hasPreEclampsiaTest && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_Radio.default, {
+      name: "bpOrMap",
+      title: "BP or MAP",
+      mandatory: true,
+      options: [{
+        value: "BP",
+        label: "BP"
+      }, {
+        value: "MAP",
+        label: "MAP"
+      }]
+    }), values.bpOrMap == "BP" && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_DateField.default, {
       name: "bpMeasurementDate",
       title: " BP Measurement Date<",
       mandatory: true,
@@ -3578,7 +3641,7 @@ const ClinicalHistory = props => {
       mandatory: true,
       min: "1",
       max: "100"
-    }), /*#__PURE__*/_react.default.createElement(_NumberField.default, {
+    })), values.bpOrMap == "MAP" && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_NumberField.default, {
       title: "MAP Reading-1",
       name: "mapReading1",
       mandatory: true,
@@ -3590,7 +3653,7 @@ const ClinicalHistory = props => {
       mandatory: true,
       min: "1",
       max: "100"
-    }), /*#__PURE__*/_react.default.createElement("div", {
+    })), /*#__PURE__*/_react.default.createElement("div", {
       className: "form-group col-12 col-md-6"
     }, /*#__PURE__*/_react.default.createElement("label", null, "Family History of Pre-eclampsia ", /*#__PURE__*/_react.default.createElement("span", {
       className: "marked"
@@ -3882,8 +3945,10 @@ const ClinicalHistory = props => {
       onChange: handleFileUploads,
       multiple: true
     })));
-  })))), // containers && testList.map((test, id) => (
-  testList.map((test, id) => /*#__PURE__*/_react.default.createElement("div", {
+  })))), containers && testList.map((test, id) =>
+  /*#__PURE__*/
+  // testList.map((test, id) => (
+  _react.default.createElement("div", {
     className: "customWrap mb-2"
   }, /*#__PURE__*/_react.default.createElement("div", null, /*#__PURE__*/_react.default.createElement("h6", null, test.test_name)), /*#__PURE__*/_react.default.createElement(_formik.Formik, {
     innerRef: multipleFormRef[id],
@@ -3972,15 +4037,15 @@ const ClinicalHistory = props => {
       className: "col-8 col-md-4 form-group"
     }, /*#__PURE__*/_react.default.createElement("label", null, "Sample Container Type ", /*#__PURE__*/_react.default.createElement("span", {
       className: "marked"
-    }, "*")), /*#__PURE__*/_react.default.createElement(_reactSelect.default, {
+    }, "*")), containers[id] ? /*#__PURE__*/_react.default.createElement(_reactSelect.default, {
       name: id,
-      getOptionLabel: e => e.label,
-      getOptionValue: e => e.value,
-      options: test.container_type,
+      getOptionLabel: e => "".concat(e.label),
+      getOptionValue: e => "".concat(e.value),
+      options: containers[id],
       value: selectedContainerType[id],
       onChange: value => handleContainerTypeChange(value, id),
       name: "referenceDoctorState"
-    }), /*#__PURE__*/_react.default.createElement(_formik.ErrorMessage, {
+    }) : /*#__PURE__*/_react.default.createElement("label", null, "Containers Not Found"), /*#__PURE__*/_react.default.createElement(_formik.ErrorMessage, {
       name: "sampleContainerType",
       component: "div",
       className: "formErr"
@@ -4155,7 +4220,7 @@ const ClinicalHistory = props => {
     onClick: e => _router.default.push("/super-dtrf"),
     className: "btn btn-primary"
   }, "Exit"))), /*#__PURE__*/_react.default.createElement("div", {
-    className: "col-md-10 col-10 text-right"
+    className: props.fromSuperDtrf ? "col-md-10 col-10 text-right" : "col-md-12 col-12 text-right"
   }, /*#__PURE__*/_react.default.createElement("div", {
     style: {
       padding: "5px 20px"

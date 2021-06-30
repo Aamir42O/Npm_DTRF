@@ -201,28 +201,7 @@ const Summary = props => {
     class: "section-title mb-2 mt-0"
   }, "Patient Details:"), patient_details && /*#__PURE__*/_react.default.createElement("div", {
     className: "form-group"
-  }, (patient_details.isNew && !hasNbs || props.from != "Dashboard") && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, collectionLocation.location == "Home" ? /*#__PURE__*/_react.default.createElement("div", {
-    className: "row"
-  }, /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
-    title: "First Name",
-    data: patient_details.firstName
-  }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
-    title: "Last Name",
-    data: patient_details.lastName
-  })) : (patient_details.filledBy == "Staff" || props.from == "Dashboard") && /*#__PURE__*/_react.default.createElement("div", {
-    className: "row"
-  }, /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
-    title: "First Name",
-    data: patient_details.firstName
-  }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
-    title: "Last Name",
-    data: patient_details.lastName
-  })), /*#__PURE__*/_react.default.createElement("div", {
-    className: "row"
-  }, /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
-    title: "Contact Number",
-    data: patient_details.contact
-  }))), (patient_details.isNew || patient_details.name.firstName) && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
+  }, (patient_details.isNew || patient_details.name.firstName) && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
     className: "row"
   }, /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Hospital ID/ Unique ID",
@@ -232,11 +211,11 @@ const Summary = props => {
     data: patient_details.salutation
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "First Name",
-    data: (hasNbs ? patient_details.hasBabyName == "true" ? "Baby " : "B/O " : "") + from == "Confirmation" ? patient_details.firstName : patient_details.name.firstName,
+    data: (hasNbs ? patient_details.hasBabyName == "true" ? "Baby " : "B/O " : "") + patient_details.name ? patient_details.name.firstName ? patient_details.name.firstName : patient_details.firstName : patient_details.firstName,
     className: hasNbs ? "col-md-5 col-12" : "col-md-6 col-12"
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Last Name",
-    data: (hasNbs ? patient_details.hasBabyName == "true" ? "Baby " : "B/O " : "") + from == "Confirmation" ? patient_details.lastName : patient_details.name.lastName,
+    data: (hasNbs ? patient_details.hasBabyName == "true" ? "Baby " : "B/O " : "") + patient_details.name ? patient_details.name.lastName ? patient_details.name.lastName : patient_details.lastName : patient_details.lastName,
     className: hasNbs ? "col-md-5 col-12" : "col-md-6 col-12"
   }))), /*#__PURE__*/_react.default.createElement("div", {
     className: "row"
@@ -250,7 +229,7 @@ const Summary = props => {
     data: patient_details.husbandsOrFathersName
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Gender",
-    data: patient_details.gender == "m" ? "Male" : patient_details.gender == "f" ? "Female" : "Other"
+    data: patient_details.gender == "male" ? "Male" : patient_details.gender == "female" ? "Female" : "Other"
   })), patient_details.ageType == "YMD" && /*#__PURE__*/_react.default.createElement("div", {
     className: "row"
   }, /*#__PURE__*/_react.default.createElement("div", {
@@ -378,7 +357,7 @@ const Summary = props => {
     data: medical_info.firstFeedingDate
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Type of Feeding",
-    data: from == "Confirmation" ? medical_info.typeOfFeeding.label : medical_info.typeOfFeeding
+    data: medical_info.typeOfFeeding
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "H/O Transfusion",
     data: medical_info.hoTransfusion
@@ -387,13 +366,13 @@ const Summary = props => {
     data: medical_info.dateOfHoTransfusion
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Delivery Status",
-    data: from == "Confirmation" ? medical_info.deliveryStatus.label : medical_info.deliveryStatus
+    data: medical_info.deliveryStatus
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Additional Symptoms / History",
     data: medical_info.additionalSymptoms
   }))), !hasNbs && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Scan Date",
-    data: medical_info.scanDate
+    data: medical_info.usgDate
   }), /*#__PURE__*/_react.default.createElement("div", {
     class: "section-title mb-2 mt-0"
   }, "Gestational Age :")), /*#__PURE__*/_react.default.createElement("div", {
@@ -584,8 +563,8 @@ const Summary = props => {
     title: "Other Referral Reason",
     data: medical_info.otherReferralReason
   })) : "")), hasPns && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
-    title: "FML Id",
-    data: medical_info.fmlId
+    title: "FMF Id",
+    data: medical_info.fmfId
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "LMP",
     data: medical_info.lmpDate
@@ -673,7 +652,7 @@ const Summary = props => {
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Twin-2: NB",
     data: medical_info.twinNb2
-  })), hasPreEclampsiaTest && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
+  })), hasPreEclampsiaTest && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, medical_info.bpOrMap == "BP" && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "BP Measurement Date",
     data: medical_info.bpMeasurementDate
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
@@ -700,13 +679,13 @@ const Summary = props => {
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "BP Right Arm - Diastolic Reading 2",
     data: medical_info.bpRightDiSystolic2
-  }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
+  })), medical_info.bpOrMap == "MAP" && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: " MAP Reading-1",
     data: medical_info.mapReading1
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "MAP Reading-2",
     data: medical_info.mapReading2
-  }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
+  })), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Family History of Pre-eclampsia",
     data: medical_info.familyHistoryPreEclampsia
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {

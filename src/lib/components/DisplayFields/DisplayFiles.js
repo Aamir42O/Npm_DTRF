@@ -1,7 +1,7 @@
 import React, { useState } from "react"
 const DisplayFiles = (props) => {
     console.log("Display file", props)
-    const [filesKey, setFilesKey] = useState(Object.keys(props.files))
+    const [filesKey, setFilesKey] = useState(props.files ? Object.keys(props.files) : [])
 
     const getFileName = (file) => {
         let fileName

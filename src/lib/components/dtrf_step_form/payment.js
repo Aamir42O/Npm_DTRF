@@ -18,15 +18,15 @@ const Payment = (props) => {
   const [confirmationBy, setConfirmationBy] = useState("")
   const [, reRender] = useState();
   const [mrpError, setMrpError] = useState(false)
-  const [instituteType, setInstituteType] = useState(1)
+  const [instituteType, setInstituteType] = useState(null)
 
   useEffect(() => {
     console.log("IN use effect", props)
     if (!instituteType) {
       if (props.fromSuperDtrf) {
-        setInstituteType(props.formDataRedux.institute_info.type)
+        setInstituteType(props.formDataRedux.institute_info.instituteName.institute_type)
       } else if (props.fromDtrfFront) {
-        setInstituteType(Cookies.get("instituteType"))
+        setInstituteType(Cookies.get("institute_type"))
       }
     }
     if (testList.length == 0) {
@@ -509,7 +509,7 @@ const Payment = (props) => {
                             </div>
                           </div>
                         }
-                        <div className="col-md-10 col-10 text-right ">
+                        <div className={props.fromSuperDtrf ? "col-md-10 col-10 text-right" : "col-md-12 col-12 text-right"}>
                           <div style={{ padding: "5px 20px" }}>
                             <button
                               onClick={handleOnClickPrevious}
@@ -534,7 +534,7 @@ const Payment = (props) => {
                               }
                             </>
                             }
-                            <button type="submit" className="btn btn-primary">
+                            <button type="submit" className="btn btn-primary" disabled={props.formDataRedux.collectionLocation ? (props.formDataRedux.collectionLocation.location == "Institute" ? false : true) : false}>
                               Next
                             </button>
                           </div>

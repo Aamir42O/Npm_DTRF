@@ -9,6 +9,8 @@ import formData from "../../reducers/form";
 import MySelect from "../mySelect";
 import reqWithToken from "../../helper/Auth";
 import AsyncSelect from "react-select/async";
+import { setFormData } from "../../actions/formData";
+import { clearFiles } from "../../actions/fileupload";
 
 const axios = require("axios");
 
@@ -119,11 +121,18 @@ const DoctorInfo = (props) => {
   }, []);
 
   const handleDoctorNameChange = (e) => {
+
     if (e == null) {
       console.log(e);
       setPrefilledDoctorName(null)
     }
     if (e) {
+      if (props.formDataRedux.test_info) {
+        const data = props.formDataRedux.test_info
+        delete data.test_info
+        props.setFormData(data)
+        props.clearFiles()
+      }
 
       if (e.practice_type == 'Gynaecologist-Obstetrician') {
         setIsGyno(true)
@@ -215,16 +224,14 @@ const DoctorInfo = (props) => {
     FirstFormRef.current.validateForm()
 
     console.log("FIRST FROM ERRORS", FirstFormRef.current.errors)
-    if (props.fromDtrfFront) {
 
-      if (!isDoctorNameValid) {
-        console.log("1")
-        setShowDoctorErrorMessage(true);
-        return;
-      } else {
-        setShowDoctorErrorMessage(false);
-        console.log("2")
-      }
+    if (!isDoctorNameValid) {
+      console.log("1")
+      setShowDoctorErrorMessage(true);
+      return;
+    } else {
+      setShowDoctorErrorMessage(false);
+      console.log("2")
     }
 
 
@@ -556,6 +563,7 @@ const DoctorInfo = (props) => {
 };
 
 const mapStateToProps = state => ({
+  formDataRedux: state.formData.formData,
   doctorName: state.formData.formData.doctor_info ? state.formData.formData.doctor_info.doctorName
     : 1,
 
@@ -568,4 +576,4 @@ const mapStateToProps = state => ({
   sonographer: state.formData.formData.doctor_info ? state.formData.formData.doctor_info.sonographer : null
 })
 
-export default connect(mapStateToProps, { getDoctors, getReferralDoctors })(DoctorInfo);
+export default connect(mapStateToProps, { getDoctors, getReferralDoctors, setFormData, clearFiles })(DoctorInfo);

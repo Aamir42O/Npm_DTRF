@@ -15,15 +15,28 @@ const TextField = (props) => {
                         <span className="marked">*</span>
                     }
                 </label>
-                <Field
-                    type={props.component ? props.component : "text"}
-                    name={props.name}
-                    placeholder={props.placeholder}
-                    className="form-control"
-                    disabled={props.disabled}
-                    component={props.component}
+                {
+                    props.defaultValue ?
+                        <Field
+                            type={props.component ? props.component : "text"}
+                            name={props.name}
+                            placeholder={props.placeholder}
+                            className="form-control"
+                            disabled={props.disabled}
+                            component={props.component}
+                            value={props.defaultValue}
+                        />
+                        :
+                        <Field
+                            type={props.component ? props.component : "text"}
+                            name={props.name}
+                            placeholder={props.placeholder}
+                            className="form-control"
+                            disabled={props.disabled}
+                            component={props.component}
+                        />
 
-                />
+                }
                 <ErrorMessage
                     name={props.name}
                     component="div"

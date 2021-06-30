@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.setFileUpload = exports.getMandatoryFilesInRedux = exports.getClearDeleteFiles = exports.getDeletedFiles = exports.getFilesReference = exports.getFilesToUpload = exports.getFiles = exports.getBthFile = exports.getCbcDocFile = exports.getCbcFile = exports.getNtscan = exports.getPnsReport = exports.getReferralLetter = exports.getPcpndtFiles = exports.getPatientPrivacy = exports.getLimitationOfTest = exports.getConsentAndIndemnity = exports.getPatientInformedConsent = exports.getPatientDeclarationPNDT = exports.getDoctorAttestaion = exports.getOtherFiles = exports.getPatientConsentFile = exports.getHDSFile = exports.getHPSFile = exports.getHESFile = exports.getUsgFile = void 0;
+exports.clearFiles = exports.setFileUpload = exports.getMandatoryFilesInRedux = exports.getClearDeleteFiles = exports.getDeletedFiles = exports.getFilesReference = exports.getFilesToUpload = exports.getFiles = exports.getBthFile = exports.getCbcDocFile = exports.getCbcFile = exports.getNtscan = exports.getPnsReport = exports.getReferralLetter = exports.getPcpndtFiles = exports.getPatientPrivacy = exports.getLimitationOfTest = exports.getConsentAndIndemnity = exports.getPatientInformedConsent = exports.getPatientDeclarationPNDT = exports.getDoctorAttestaion = exports.getOtherFiles = exports.getPatientConsentFile = exports.getHDSFile = exports.getHPSFile = exports.getHESFile = exports.getUsgFile = void 0;
 
 var _action = require("./action");
 
@@ -243,3 +243,12 @@ const setFileUpload = payload => dispatch => {
 };
 
 exports.setFileUpload = setFileUpload;
+
+const clearFiles = () => dispatch => {
+  dispatch({
+    type: _action.CLEAR_FILES,
+    payload: {}
+  });
+};
+
+exports.clearFiles = clearFiles;

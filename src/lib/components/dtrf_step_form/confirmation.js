@@ -50,6 +50,7 @@ const Confirmation = (props) => {
   const [patientLink, setPatientLink] = useState()
   const [hasPoc, setHasPoc] = useState(false)
   const [confirmationByPatient, setConfirmationByPatient] = useState()
+
   const [hasNbs, setHasNbs] = useState(false)
   const [hasPreEclampsiaTest, setHasPreEclampsiaTest] = useState(false)
   const [isPcpnndt, setIsPcpndt] = useState(false)
@@ -380,9 +381,7 @@ const Confirmation = (props) => {
           errors.weight = "Required"
         }
       } else {
-        if (!values.husbandsOrFathersName) {
-          errors.husbandsOrFathersName = "Required";
-        }
+
       }
       if (hasPns || hasNipt) {
         if (!values.height) {
@@ -469,8 +468,8 @@ const Confirmation = (props) => {
       }
       if (!hasCyto) {
 
-        if (!values.scanDate) {
-          errors.scanDate = "Required"
+        if (!values.usgDate) {
+          errors.usgDate = "Required"
         }
         if (!values.currentGestationalAgeWeeks) {
           errors.currentGestationalAgeWeeks = "Required"
@@ -551,6 +550,12 @@ const Confirmation = (props) => {
         if (!values.twinCrl2) {
           errors.twinCrl2 = "Required"
         }
+        if (!values.twinNt1) {
+          errors.twinNt1 = "Required";
+        }
+        if (!values.twinNt2) {
+          errors.twinNt2 = "Required";
+        }
       }
       if (testTrimester == "Second") {
         if (!(values.bpd || values.fl || values.hc || values.crl)) {
@@ -558,38 +563,57 @@ const Confirmation = (props) => {
         }
       }
       if (hasPreEclampsiaTest) {
-        if (!values.bpMeasurementDate) {
-          errors.bpMeasurementDate = "Required"
+        if (!values.bpOrMap) {
+          errors.bpOrMap = "Required"
+        } else {
+          if (values.bpOrMap == "BP") {
+            if (!values.bpMeasurementDate) {
+              errors.bpMeasurementDate = "Required"
+            }
+            if (!values.bpLeftSystolic1) {
+              errors.bpLeftSystolic1 = "Required"
+            }
+            if (!values.bpLeftDiSystolic1) {
+              errors.bpLeftDiSystolic1 = "Required"
+            }
+            if (!values.bpLeftSystolic2) {
+              errors.bpLeftSystolic2 = "Required"
+            }
+            if (!values.bpLeftDiSystolic2) {
+              errors.bpLeftDiSystolic2 = "Required"
+            }
+            if (!values.bpRightSystolic1) {
+              errors.bpRightSystolic1 = "Required"
+            }
+            if (!values.bpRightDiSystolic1) {
+              errors.bpRightDiSystolic1 = "Required"
+            }
+            if (!values.bpRightSystolic2) {
+              errors.bpRightSystolic2 = "Required"
+            }
+            if (!values.bpRightDiSystolic2) {
+              errors.bpRightDiSystolic2 = "Required"
+            }
+          } else if (values.bpOrMap == "MAP") {
+            if (!values.mapReading1) {
+              errors.mapReading1 = "Required"
+            }
+            if (!values.mapReading2) {
+              errors.mapReading2 = "Required"
+            }
+          }
         }
-        if (!values.bpLeftSystolic1) {
-          errors.bpLeftSystolic1 = "Required"
+        if (!values.familyHistoryPreEclampsia) {
+          errors.familyHistoryPreEclampsia = "Required"
         }
-        if (!values.bpLeftDiSystolic1) {
-          errors.bpLeftDiSystolic1 = "Required"
+        if (!values.chronicHypertension) {
+          errors.chronicHypertension = "Required"
         }
-        if (!values.bpLeftSystolic2) {
-          errors.bpLeftSystolic2 = "Required"
+        if (!values.uterineArteryPulsativeIndexRightPI) {
+          errors.uterineArteryPulsativeIndexRightPI = "Required"
         }
-        if (!values.bpLeftDiSystolic2) {
-          errors.bpLeftDiSystolic2 = "Required"
-        }
-        if (!values.bpRightSystolic1) {
-          errors.bpRightSystolic1 = "Required"
-        }
-        if (!values.bpRightDiSystolic1) {
-          errors.bpRightDiSystolic1 = "Required"
-        }
-        if (!values.bpRightSystolic2) {
-          errors.bpRightSystolic2 = "Required"
-        }
-        if (!values.bpRightDiSystolic2) {
-          errors.bpRightDiSystolic2 = "Required"
-        }
-        if (!values.mapReading1) {
-          errors.mapReading1 = "Required"
-        }
-        if (!values.mapReading2) {
-          errors.mapReading2 = "Required"
+        if (!values.uterineArteryPulsativeIndexLeftPI) {
+          errors.uterineArteryPulsativeIndexLeftPI = "Required"
         }
         if (!values.familyHistoryPreEclampsia) {
           errors.familyHistoryPreEclampsia = "Required"
@@ -772,6 +796,17 @@ const Confirmation = (props) => {
         }
       }
     })
+    if (hasNipt) {
+      props.fileUpload.pcpndtFiles.map((data) => {
+        if (data.scans) {
+
+          if (data.scans.length <= 0) {
+            errors.pcpndtFiles = "Required"
+          }
+        }
+      })
+    }
+
     console.log("ERRORS IN FILE", errors)
     if (!(Object.keys(errors).length === 0 && errors.constructor === Object)) {
       console.log("ERRORS", errors)
@@ -995,7 +1030,7 @@ const Confirmation = (props) => {
           }
           if (response.data.message == "Pending") {
             setShowLoader(false)
-            return errorMessage("Patent Confirmation Pending")
+            return infoMessage("Patent Confirmation Pending")
           }
 
         }
@@ -1005,7 +1040,7 @@ const Confirmation = (props) => {
           setSubmitted(true)
           return setModalShow(true)
         } else {
-          return errorMessage(response.data.message)
+          return infoMessage(response.data.message)
         }
       }
     } else {
@@ -1056,9 +1091,6 @@ const Confirmation = (props) => {
 
   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!~~~CLOSE!!!!!!!!!!!!!~!~~~~~~~~~~~~~~~~~~~~~~~~
 
-  const errorMessage = (msg) => {
-    message.error(msg);
-  };
 
   console.log("formvalues", formValues)
   return (
@@ -1117,7 +1149,7 @@ const Confirmation = (props) => {
       </Modal>
       {/* -------------------- close -----------------home location modal ---------------------------*/}
       {
-        props.fromSuperDtrf &&
+        (props.fromSuperDtrf && !props.Token.isComplete) &&
         <div className="row">
           <div className="col-md-12 col-12 text-right">
             <button
@@ -1153,7 +1185,7 @@ const Confirmation = (props) => {
       <div className="row" id="action1">
         <div className="col-md-12 col-12 text-right">
           <div style={{ padding: "5px 20px" }}>
-            {!showLoader &&
+            {(!showLoader && showPrevious) &&
 
               <button
                 onClick={handleOnClickPrevious}
@@ -1189,28 +1221,63 @@ const Confirmation = (props) => {
               </>
             }
             {(confirmationByPatient) ?
-              <button
-                type="button"
-                className="btn btn-primary"
-                disabled={submitted}
-                onClick={tempOnSubmit}
-                name="sendLink"
-              >
-                Send Link
-              </button>
+              <>
+                {
+                  linkedSent ?
+                    <>
+                      <button
+                        type="button"
+                        className="btn btn-primary mr-2"
+                        disabled={submitted}
+                        onClick={tempOnSubmit}
+                        name="sendLink"
+                      >
+                        Resend Link
+                      </button>
+                      <button
+                        disabled={submitted}
+                        type="button"
+                        className="btn btn-primary mr-2"
+                        name="sendDtrf"
+                        // onClick={onSubmit}
+                        onClick={tempOnSubmit}
+                      >
+                        Submit Dtrf
+                      </button>
+                    </>
+                    :
+                    <button
+                      type="button"
+                      className="btn btn-primary mr-2"
+                      disabled={submitted}
+                      onClick={tempOnSubmit}
+                      name="sendLink"
+                    >
+                      Send Link
+                    </button>
+                }
+
+
+
+              </>
               : showLoader ?
                 <Spin indicator={antIcon} />
                 :
-                <button
-                  disabled={submitted}
-                  type="button"
-                  className="btn btn-primary"
-                  name="submit"
-                  // onClick={onSubmit}
-                  onClick={tempOnSubmit}
-                >
-                  Submit DTRF
-                </button>
+                <>
+                  {
+                    (props.fromDtrfFront || !props.Token.isComplete) &&
+                    <button
+                      disabled={submitted}
+                      type="button"
+                      className="btn btn-primary mr-2"
+                      name="submit"
+                      // onClick={onSubmit}
+                      onClick={tempOnSubmit}
+                    >
+                      Submit DTRF
+                    </button>
+                  }
+                </>
             }
           </div>
         </div>

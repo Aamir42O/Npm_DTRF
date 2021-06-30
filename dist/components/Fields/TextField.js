@@ -18,7 +18,15 @@ const TextField = props => {
     className: "form-group"
   }, /*#__PURE__*/_react.default.createElement("label", null, props.title, props.mandatory && /*#__PURE__*/_react.default.createElement("span", {
     className: "marked"
-  }, "*")), /*#__PURE__*/_react.default.createElement(_formik.Field, {
+  }, "*")), props.defaultValue ? /*#__PURE__*/_react.default.createElement(_formik.Field, {
+    type: props.component ? props.component : "text",
+    name: props.name,
+    placeholder: props.placeholder,
+    className: "form-control",
+    disabled: props.disabled,
+    component: props.component,
+    value: props.defaultValue
+  }) : /*#__PURE__*/_react.default.createElement(_formik.Field, {
     type: props.component ? props.component : "text",
     name: props.name,
     placeholder: props.placeholder,

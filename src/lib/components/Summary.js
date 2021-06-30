@@ -220,7 +220,7 @@ const Summary = (props) => {
 
 
                                     <div className="form-group">
-                                        {((patient_details.isNew && !hasNbs) || props.from != "Dashboard") && (
+                                        {/* {((patient_details.isNew && !hasNbs) || props.from != "Dashboard") && (
                                             <>
                                                 {collectionLocation.location == "Home" ?
 
@@ -257,7 +257,7 @@ const Summary = (props) => {
 
                                                 </div>
                                             </>
-                                        )}
+                                        )} */}
                                         {(patient_details.isNew || patient_details.name.firstName) && (
                                             <>
                                                 {
@@ -286,10 +286,15 @@ const Summary = (props) => {
                                                                 data={
                                                                     (hasNbs ?
                                                                         (patient_details.hasBabyName == "true" ? "Baby " : "B/O ") : "") +
-                                                                        from == "Confirmation" ?
+                                                                        patient_details.name ?
+                                                                        (
+
+                                                                            patient_details.name.firstName ?
+                                                                                patient_details.name.firstName :
+                                                                                patient_details.firstName
+                                                                        ) :
                                                                         patient_details
-                                                                            .firstName :
-                                                                        patient_details.name.firstName
+                                                                            .firstName
                                                                 }
                                                                 className={hasNbs ? "col-md-5 col-12" : "col-md-6 col-12"}
                                                             />
@@ -299,10 +304,15 @@ const Summary = (props) => {
                                                                     (hasNbs ?
 
                                                                         (patient_details.hasBabyName == "true" ? "Baby " : "B/O ") : "") +
-                                                                        from == "Confirmation" ?
+                                                                        patient_details.name ?
+                                                                        (
+
+                                                                            patient_details.name.lastName ?
+                                                                                patient_details.name.lastName :
+                                                                                patient_details.lastName
+                                                                        ) :
                                                                         patient_details
-                                                                            .lastName :
-                                                                        patient_details.name.lastName
+                                                                            .lastName
                                                                 }
                                                                 className={hasNbs ? "col-md-5 col-12" : "col-md-6 col-12"}
                                                             />
@@ -333,10 +343,10 @@ const Summary = (props) => {
                                                                 <DisplayFields
                                                                     title="Gender"
                                                                     data={patient_details
-                                                                        .gender == "m"
+                                                                        .gender == "male"
                                                                         ? "Male"
                                                                         : patient_details
-                                                                            .gender == "f"
+                                                                            .gender == "female"
                                                                             ? "Female"
                                                                             : "Other"}
                                                                 />
@@ -567,9 +577,7 @@ const Summary = (props) => {
                                                     />
                                                     <DisplayFields
                                                         title="Type of Feeding"
-                                                        data={from == "Confirmation" ?
-                                                            medical_info
-                                                                .typeOfFeeding.label :
+                                                        data={
                                                             medical_info.typeOfFeeding
                                                         }
                                                     />
@@ -589,9 +597,7 @@ const Summary = (props) => {
                                                     }
                                                     <DisplayFields
                                                         title="Delivery Status"
-                                                        data={from == "Confirmation" ?
-                                                            medical_info
-                                                                .deliveryStatus.label :
+                                                        data={
                                                             medical_info
                                                                 .deliveryStatus
                                                         }
@@ -608,7 +614,7 @@ const Summary = (props) => {
                                             !hasNbs && <>
                                                 <DisplayFields
                                                     title="Scan Date"
-                                                    data={medical_info.scanDate}
+                                                    data={medical_info.usgDate}
                                                 />
 
                                                 <div class="section-title mb-2 mt-0">Gestational Age :</div>
@@ -1012,8 +1018,8 @@ const Summary = (props) => {
                                             {hasPns && (
                                                 <>
                                                     <DisplayFields
-                                                        title="FML Id"
-                                                        data={medical_info.fmlId}
+                                                        title="FMF Id"
+                                                        data={medical_info.fmfId}
                                                     />
                                                     <DisplayFields
                                                         title="LMP"
@@ -1172,50 +1178,62 @@ const Summary = (props) => {
 
                                                     {hasPreEclampsiaTest &&
                                                         <>
-                                                            <DisplayFields
-                                                                title="BP Measurement Date"
-                                                                data={medical_info.bpMeasurementDate}
-                                                            />
-                                                            <DisplayFields
-                                                                title="BP Left Arm - Systolic Reading 1"
-                                                                data={medical_info.bpLeftSystolic1}
-                                                            />
-                                                            <DisplayFields
-                                                                title="BP Left Arm - Diastolic Reading 1"
-                                                                data={medical_info.bpLeftDiSystolic1}
-                                                            />
-                                                            <DisplayFields
-                                                                title="BP Left Arm - Systolic Reading 2"
-                                                                data={medical_info.bpLeftSystolic2}
-                                                            />
-                                                            <DisplayFields
-                                                                title="BP Left Arm - Diastolic Reading 2"
-                                                                data={medical_info.bpLeftDiSystolic2}
-                                                            />
-                                                            <DisplayFields
-                                                                title="BP Right Arm - Systolic Reading 1"
-                                                                data={medical_info.bpRightSystolic1}
-                                                            />
-                                                            <DisplayFields
-                                                                title="BP Right Arm - Diastolic Reading 1"
-                                                                data={medical_info.bpRightDiSystolic1}
-                                                            />
-                                                            <DisplayFields
-                                                                title="BP Right Arm - Systolic Reading 2"
-                                                                data={medical_info.bpRightSystolic2}
-                                                            />
-                                                            <DisplayFields
-                                                                title="BP Right Arm - Diastolic Reading 2"
-                                                                data={medical_info.bpRightDiSystolic2}
-                                                            />
-                                                            <DisplayFields
-                                                                title=" MAP Reading-1"
-                                                                data={medical_info.mapReading1}
-                                                            />
-                                                            <DisplayFields
-                                                                title="MAP Reading-2"
-                                                                data={medical_info.mapReading2}
-                                                            />
+                                                            {
+                                                                medical_info.bpOrMap == "BP" &&
+                                                                <>
+                                                                    <DisplayFields
+                                                                        title="BP Measurement Date"
+                                                                        data={medical_info.bpMeasurementDate}
+                                                                    />
+                                                                    <DisplayFields
+                                                                        title="BP Left Arm - Systolic Reading 1"
+                                                                        data={medical_info.bpLeftSystolic1}
+                                                                    />
+                                                                    <DisplayFields
+                                                                        title="BP Left Arm - Diastolic Reading 1"
+                                                                        data={medical_info.bpLeftDiSystolic1}
+                                                                    />
+                                                                    <DisplayFields
+                                                                        title="BP Left Arm - Systolic Reading 2"
+                                                                        data={medical_info.bpLeftSystolic2}
+                                                                    />
+                                                                    <DisplayFields
+                                                                        title="BP Left Arm - Diastolic Reading 2"
+                                                                        data={medical_info.bpLeftDiSystolic2}
+                                                                    />
+                                                                    <DisplayFields
+                                                                        title="BP Right Arm - Systolic Reading 1"
+                                                                        data={medical_info.bpRightSystolic1}
+                                                                    />
+                                                                    <DisplayFields
+                                                                        title="BP Right Arm - Diastolic Reading 1"
+                                                                        data={medical_info.bpRightDiSystolic1}
+                                                                    />
+                                                                    <DisplayFields
+                                                                        title="BP Right Arm - Systolic Reading 2"
+                                                                        data={medical_info.bpRightSystolic2}
+                                                                    />
+                                                                    <DisplayFields
+                                                                        title="BP Right Arm - Diastolic Reading 2"
+                                                                        data={medical_info.bpRightDiSystolic2}
+                                                                    />
+                                                                </>
+                                                            }
+                                                            {
+                                                                medical_info.bpOrMap == "MAP" &&
+                                                                <>
+                                                                    <DisplayFields
+                                                                        title=" MAP Reading-1"
+                                                                        data={medical_info.mapReading1}
+                                                                    />
+                                                                    <DisplayFields
+                                                                        title="MAP Reading-2"
+                                                                        data={medical_info.mapReading2}
+                                                                    />
+                                                                </>
+                                                            }
+
+
                                                             <DisplayFields
                                                                 title="Family History of Pre-eclampsia"
                                                                 data={medical_info.familyHistoryPreEclampsia}

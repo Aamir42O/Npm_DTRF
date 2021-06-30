@@ -49,6 +49,11 @@ function fileUpload() {
   } = action;
 
   switch (type) {
+    case _action.CLEAR_FILES:
+      return _objectSpread(_objectSpread({}, state), {}, {
+        files: {}
+      });
+
     case _action.GET_MANDATORY_FILES:
       return _objectSpread(_objectSpread({}, state), {}, {
         mandatoryFiles: payload

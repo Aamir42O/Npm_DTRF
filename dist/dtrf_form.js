@@ -104,7 +104,7 @@ const Dtrf_form = props => {
   const router = (0, _router.useRouter)();
 
   const getSavedDtrf = async () => {
-    const url = "http://65.1.45.74:8187/v1/dtrf/get-super-dtrf/" + router.query.id;
+    const url = process.env.NEXT_PUBLIC_GET_SUPER_DTRF + "/" + router.query.id;
     const res = await (0, _Auth.default)(url, "GET");
     console.log("router", router.query);
     console.log("response", res);
@@ -118,13 +118,21 @@ const Dtrf_form = props => {
         props.setIsComplete(true);
       }
 
-      if (res.data.data.dtrf.dtrf.medical_info && res.data.data.dtrf.dtrf.medical_info.medical_info.files) {
-        let pcpndtFiles = [];
+      let pcpndtFiles = res.data.data.dtrf.dtrf.test_info.selectedTests.map(() => {
+        return {
+          scans: [],
+          names: []
+        };
+      });
+      props.getPcpndtFiles(pcpndtFiles);
+      console.log("pcpndtFiles from getSavedDtrf", pcpndtFiles);
 
+      if (res.data.data.dtrf.dtrf.medical_info && res.data.data.dtrf.dtrf.medical_info.medical_info.files) {
         if (res.data.data.dtrf.dtrf.medical_info.sample_info) {
           pcpndtFiles = res.data.data.dtrf.dtrf.medical_info.sample_info.pcpndtList;
         }
 
+        console.log("pcpndtFiles from getSavedDtrf", pcpndtFiles);
         getFilesOnRedux(res.data.data.dtrf.dtrf.medical_info.medical_info.files, pcpndtFiles);
       }
 
@@ -440,7 +448,11 @@ const Dtrf_form = props => {
   }));
 
   function getSteps() {
-    return ['Doctor Info', 'Test Details', 'Choose collection', "patient Details", "Clinical History", "Payment", "Confirmation"];
+    if (props.fromSuperDtrf) {
+      return ["Institute Info", 'Doctor Info', 'Test Details', 'Choose collection', "patient Details", "Clinical History", "Payment", "Confirmation"];
+    } else if (props.fromDtrfFront) {
+      return ['Doctor Info', 'Test Details', 'Choose collection', "patient Details", "Clinical History", "Payment", "Confirmation"];
+    }
   }
 
   const steps = getSteps();

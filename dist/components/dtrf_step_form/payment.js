@@ -42,15 +42,15 @@ const Payment = props => {
   const [confirmationBy, setConfirmationBy] = (0, _react.useState)("");
   const [, reRender] = (0, _react.useState)();
   const [mrpError, setMrpError] = (0, _react.useState)(false);
-  const [instituteType, setInstituteType] = (0, _react.useState)(1);
+  const [instituteType, setInstituteType] = (0, _react.useState)(null);
   (0, _react.useEffect)(() => {
     console.log("IN use effect", props);
 
     if (!instituteType) {
       if (props.fromSuperDtrf) {
-        setInstituteType(props.formDataRedux.institute_info.type);
+        setInstituteType(props.formDataRedux.institute_info.instituteName.institute_type);
       } else if (props.fromDtrfFront) {
-        setInstituteType(_jsCookie.default.get("instituteType"));
+        setInstituteType(_jsCookie.default.get("institute_type"));
       }
     }
 
@@ -480,7 +480,7 @@ const Payment = props => {
       onClick: e => _router.default.push("/super-dtrf"),
       className: "btn btn-primary"
     }, "Exit"))), /*#__PURE__*/_react.default.createElement("div", {
-      className: "col-md-10 col-10 text-right "
+      className: props.fromSuperDtrf ? "col-md-10 col-10 text-right" : "col-md-12 col-12 text-right"
     }, /*#__PURE__*/_react.default.createElement("div", {
       style: {
         padding: "5px 20px"
@@ -495,7 +495,8 @@ const Payment = props => {
       className: "btn btn-primary mr-2"
     }, "Save")), /*#__PURE__*/_react.default.createElement("button", {
       type: "submit",
-      className: "btn btn-primary"
+      className: "btn btn-primary",
+      disabled: props.formDataRedux.collectionLocation ? props.formDataRedux.collectionLocation.location == "Institute" ? false : true : false
     }, "Next"))))));
   }))))));
 };

@@ -13,7 +13,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 const DateFieldComponent = props => {
   return /*#__PURE__*/_react.default.createElement("div", {
-    className: props.className ? props.className : "col-md-6 col-12"
+    className: props.className ? props.className : "col-md-6 col-12 mb-2"
   }, /*#__PURE__*/_react.default.createElement("div", {
     className: "form-group"
   }, /*#__PURE__*/_react.default.createElement("label", null, props.title, props.mandatory && /*#__PURE__*/_react.default.createElement("span", {

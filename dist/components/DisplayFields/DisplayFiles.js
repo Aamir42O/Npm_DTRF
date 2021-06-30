@@ -13,7 +13,7 @@ function _interopRequireWildcard(obj, nodeInterop) { if (!nodeInterop && obj && 
 
 const DisplayFiles = props => {
   console.log("Display file", props);
-  const [filesKey, setFilesKey] = (0, _react.useState)(Object.keys(props.files));
+  const [filesKey, setFilesKey] = (0, _react.useState)(props.files ? Object.keys(props.files) : []);
 
   const getFileName = file => {
     let fileName;

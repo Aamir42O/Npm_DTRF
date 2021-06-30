@@ -43,6 +43,8 @@ var _DateField = _interopRequireDefault(require("../Fields/DateField"));
 
 var _commonHelper = require("../../helper/commonHelper");
 
+var _DisplayField = _interopRequireDefault(require("../DisplayFields/DisplayField"));
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function _getRequireWildcardCache(nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
@@ -109,30 +111,31 @@ const PatientForm = props => {
   const [patientFoundModal, setPatientFoundModal] = (0, _react.useState)(false);
   const [patientFoundDetails, setPatientFoundDetails] = (0, _react.useState)("");
   const [usePatientFound, setUsePatientFound] = (0, _react.useState)(false);
+  const [gender, setGender] = (0, _react.useState)([]);
   console.log("PR))))0000000", props);
   const formikRef = (0, _react.useRef)();
-  (0, _react.useEffect)(async () => {
-    console.log("props00000000000000000000000000", props);
 
-    if (props.testGroup) {
-      if (props.testGroup == "PNS") {
-        setHasPns(true);
-      } else if (props.testGroup == "NIPT") {
-        setHasNipt(true);
-      } else if (props.testGroup == "NBS") {
-        setHasNbs(true);
-      } else if (props.testGroup == "CYTO") {
-        setHasNipt(true);
-      }
-    }
-
-    if (props.sendBy && props.sendBy == "Link" && !props.isNew) {
-      props.getPatient_details(props.patient);
-    }
-
-    if (props.formValues.test_info && !maxAge) {
+  const getDataFromTest = () => {
+    if (props.formValues.test_info && !maxAge && gender.length <= 0) {
       let maxxAge = null;
+      let genderValidation = null;
       props.formValues.test_info.selectedTests.map(test => {
+        if (!genderValidation) {
+          genderValidation = test.sex;
+        } else if (genderValidation.length > 1 && test.sex.length < genderValidation) {
+          genderValidation = test.sex;
+        } else if (test.sex.length == 1) {
+          genderValidation = test.sex;
+        } else if (genderValidation.length > 1 && test.sex.length == genderValidation) {
+          let temp = [];
+          test.sex.map((sex, id) => {
+            if (genderValidation[id] == sex) {
+              temp.push(sex);
+            }
+          });
+          genderValidation = temp;
+        }
+
         if (test.sub_group != "Both") {
           setTestGroup(test.sub_group);
         }
@@ -152,8 +155,36 @@ const PatientForm = props => {
         }
       });
       console.log(maxxAge, "maxage");
+      let temp = [];
+      genderValidation.map(data => {
+        temp.push(data.toLowerCase());
+      });
+      console.log("GENDER VALIDATION", genderValidation, temp);
+      setGender(temp);
       setMaxAge(maxxAge);
     }
+  };
+
+  (0, _react.useEffect)(async () => {
+    console.log("props00000000000000000000000000", props);
+
+    if (props.testGroup) {
+      if (props.testGroup == "PNS") {
+        setHasPns(true);
+      } else if (props.testGroup == "NIPT") {
+        setHasNipt(true);
+      } else if (props.testGroup == "NBS") {
+        setHasNbs(true);
+      } else if (props.testGroup == "CYTO") {
+        setHasNipt(true);
+      }
+    }
+
+    if (props.sendBy && props.sendBy == "Link" && !props.isNew) {
+      props.getPatient_details(props.patient);
+    }
+
+    getDataFromTest();
 
     if (props.dynamicPatient.dateOfBirth && !ageInYears) {
       setAgeInYMD(props.dynamicPatient.dateOfBirth);
@@ -872,14 +903,16 @@ const PatientForm = props => {
             if (!values.mothersDateOfBirth) {}
 
             if (values.mothersDateOfBirth) {
-              const diff = (0, _moment.default)(values.mothersDateOfBirth).diff((0, _moment.default)().format("YYYY-MM-DD"), "days");
+              // const diff = moment(values.mothersDateOfBirth).diff(moment().format("YYYY-MM-DD"), "days")
+              // if (diff >= 0) {
+              //   errors.mothersDateOfBirth = "Invalid Date"
+              // }
+              const diff2 = (0, _moment.default)((0, _moment.default)().format("YYYY-MM-DD")).diff(values.mothersDateOfBirth, "days");
 
-              if (diff >= 0) {
-                errors.mothersDateOfBirth = "Invalid Date";
+              if (diff2 < 18) {
+                errors.mothersDateOfBirth = "Age should be more than 18 Years";
               }
             }
-
-            if (!values.mothersLastName) {}
 
             if ([null, '', false].includes(values.weight)) {} else if (values.weight >= 10) {
               errors.weight = "Weight should be less than 10kg";
@@ -922,7 +955,11 @@ const PatientForm = props => {
             }
           }
 
-          if (!values.gender) {}
+          if (!values.gender) {} else {
+            if (!gender.includes(values.gender)) {
+              errors.gender = values.gender + " is not a valid gender for this test";
+            }
+          }
 
           if (values.email) {
             if (!/^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+$/.test(values.email)) {
@@ -1143,10 +1180,14 @@ const PatientForm = props => {
             }
 
             if (values.mothersDateOfBirth) {
-              const diff = (0, _moment.default)(values.mothersDateOfBirth).diff((0, _moment.default)().format("YYYY-MM-DD"), "days");
+              const diff = (0, _moment.default)((0, _moment.default)().format("YYYY-MM-DD")).diff(values.mothersDateOfBirth, "days"); // if (diff >= 0) {
+              //   errors.mothersDateOfBirth = "Invalid Date"
+              // }
 
-              if (diff >= 0) {
-                errors.mothersDateOfBirth = "Invalid Date";
+              const diff2 = (0, _moment.default)((0, _moment.default)().format("YYYY-MM-DD")).diff(values.mothersDateOfBirth, "days");
+
+              if (diff2 < 18) {
+                errors.mothersDateOfBirth = "Age should be more than 18 Years";
               }
             }
 
@@ -1154,7 +1195,7 @@ const PatientForm = props => {
               errors.mothersLastName = "Required";
             }
 
-            if (!values.weight) {
+            if ([null, '', false].includes(values.weight)) {
               errors.weight = "Required";
             } else if (values.weight >= 10) {
               errors.weight = "Weight should be less than 10kg";
@@ -1201,15 +1242,17 @@ const PatientForm = props => {
           }
 
           if (!hasNbs) {
-            if (!values.husbandsOrFathersName) {
-              errors.husbandsOrFathersName = "Required";
-            } else if (!/^[a-zA-Z ]+$/.test(values.husbandsOrFathersName)) {
+            if (!values.husbandsOrFathersName) {} else if (!/^[a-zA-Z ]+$/.test(values.husbandsOrFathersName)) {
               errors.husbandsOrFathersName = "Name should be in alphabets";
             }
           }
 
           if (!values.gender) {
             errors.gender = "Required";
+          } else {
+            if (!gender.includes(values.gender)) {
+              errors.gender = values.gender + " is not a valid gender for this test";
+            }
           }
 
           if (values.email) {
@@ -1307,7 +1350,7 @@ const PatientForm = props => {
           }
 
           if (hasPns || hasNipt) {
-            if (!values.height) {
+            if ([null, '', false].includes(values.height)) {
               errors.height = "Required";
             } else if (!Number(values.height)) {
               errors.height = "Should be Number";
@@ -1315,7 +1358,7 @@ const PatientForm = props => {
               errors.height = "Height should be between 61cm and 198cm";
             }
 
-            if (!values.weight) {
+            if ([null, '', false].includes(values.weight)) {
               errors.weight = "Required";
             } else if (!Number(values.weight)) {
               errors.weight = "Should be Number";
@@ -1559,7 +1602,7 @@ const PatientForm = props => {
     }, /*#__PURE__*/_react.default.createElement(_TextField.default, {
       name: "hospitalId",
       title: "Hospital ID/Unique ID"
-    }), /*#__PURE__*/_react.default.createElement(_Radio.default, {
+    }), !hasNbs && /*#__PURE__*/_react.default.createElement(_Radio.default, {
       name: "salutation",
       title: "Title",
       mandatory: false,
@@ -1572,16 +1615,10 @@ const PatientForm = props => {
       }, {
         value: "Mr",
         label: "Mr"
-      }, {
-        value: "Master",
-        label: "Master"
-      }, {
-        value: "B/O",
-        label: "B/O"
       }]
     })), hasNbs && /*#__PURE__*/_react.default.createElement(_Radio.default, {
       name: "hasBabyName",
-      title: values.gender == "m" ? "Has master been Named?" : "Has Baby been Named?",
+      title: "Has Infant been named?",
       mandatory: true,
       options: [{
         value: "true",
@@ -1592,33 +1629,31 @@ const PatientForm = props => {
       }]
     }), /*#__PURE__*/_react.default.createElement("div", {
       className: "row"
-    }, hasNbs && values.hasBabyName && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, values.hasBabyName == "true" ? /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
-      className: "col-md-2 col-12"
-    }, /*#__PURE__*/_react.default.createElement("label", {
+    }, hasNbs && values.hasBabyName && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
+      className: "row",
       style: {
-        paddingTop: "30px"
+        width: "100%"
       }
-    }, values.gender == "f" ? "Baby" : "Master"))) : /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
-      className: "col-md-2 col-12"
-    }, /*#__PURE__*/_react.default.createElement("label", {
-      style: {
-        paddingTop: "30px"
-      }
-    }, "Baby of"))), /*#__PURE__*/_react.default.createElement(_TextField.default, {
+    }, /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
+      title: "Title",
+      data: values.hasBabyName == "true" ? values.gender == "female" ? "Baby" : "Master" : "Baby Of",
+      className: "col-md-2",
+      clinical_info: true
+    }), /*#__PURE__*/_react.default.createElement(_TextField.default, {
       name: "firstName",
       title: "First Name",
       mandatory: true,
       placeholder: "Enter first name",
       disabled: patientFound && !usePatientFound,
-      className: "col-md-5 col-12"
+      className: "col-md-5"
     }), /*#__PURE__*/_react.default.createElement(_TextField.default, {
       name: "lastName",
       title: "Last Name",
       mandatory: hasNbs ? false : true,
       placeholder: "Enter last name",
       disabled: patientFound && !usePatientFound,
-      className: "col-md-5 col-12"
-    })), !hasNbs && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_TextField.default, {
+      className: "col-md-5"
+    }))), !hasNbs && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_TextField.default, {
       name: "firstName",
       title: "First Name",
       mandatory: true,
@@ -1638,8 +1673,24 @@ const PatientForm = props => {
       name: "contact",
       title: "Contact Number",
       mandatory: true,
-      placeholder: "Enter Contact Number"
-    })), (!props.new || props.formValues.collectionLocation.location != "Home" || props.sendBy && props.sendBy == "Link") && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
+      placeholder: "Enter Contact Number",
+      disabled: (props.new ? false : true) || patientFound && !usePatientFound
+    }), hasNbs && /*#__PURE__*/_react.default.createElement(_Radio.default, {
+      title: "Gender",
+      name: "gender",
+      mandatory: true,
+      options: [{
+        value: "male",
+        label: "Male"
+      }, {
+        value: "female",
+        label: "Female"
+      }, {
+        value: "other",
+        label: "Other"
+      }],
+      disabled: patientFound && !usePatientFound
+    })), (!props.new && props.formValues.collectionLocation.location != "Home" || props.sendBy && props.sendBy == "Link") && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
       className: "row"
     }, /*#__PURE__*/_react.default.createElement(_Radio.default, {
       name: "ageType",
@@ -1649,7 +1700,7 @@ const PatientForm = props => {
         label: "Date Of birth",
         value: "dob"
       }, {
-        label: "Years,Months,days",
+        label: "Years-Months-days",
         value: "ageInYMD"
       }]
     }), values.ageType == "ageInYMD" && /*#__PURE__*/_react.default.createElement("div", {
@@ -1683,21 +1734,21 @@ const PatientForm = props => {
       className: "row"
     }, values.ageType == "dob" && /*#__PURE__*/_react.default.createElement(_DateField.default, {
       name: "dateOfBirth",
-      title: hasNbs ? "Baby`'s Date of Birth" : "Date of Birth",
+      title: hasNbs ? "Infant's Date of Birth" : "Date of Birth",
       max: (0, _moment.default)().format("YYYY-MM-DD"),
       mandatory: true
-    }), /*#__PURE__*/_react.default.createElement(_Radio.default, {
+    }), !hasNbs && /*#__PURE__*/_react.default.createElement(_Radio.default, {
       title: "Gender",
       name: "gender",
       mandatory: true,
       options: [{
-        value: "m",
+        value: "male",
         label: "Male"
       }, {
-        value: "f",
+        value: "female",
         label: "Female"
       }, {
-        value: "o",
+        value: "other",
         label: "Other"
       }],
       disabled: patientFound && !usePatientFound
@@ -1761,7 +1812,6 @@ const PatientForm = props => {
     }, !hasNbs && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_TextField.default, {
       name: "husbandsOrFathersName",
       title: "Husband's/Father Name",
-      mandatory: true,
       placeholder: "Enter Husband's/Father Name",
       disabled: patientFound && !usePatientFound
     })), /*#__PURE__*/_react.default.createElement("div", {
@@ -1889,12 +1939,12 @@ const PatientForm = props => {
       title: "Contact Number",
       mandatory: true,
       placeholder: "Enter Contact Number",
-      disabled: patientFound && !usePatientFound
+      disabled: (props.new ? false : true) || patientFound && !usePatientFound
     }), /*#__PURE__*/_react.default.createElement("button", {
       onClick: handleSendFormLink,
       type: "button",
       className: "btn btn-info"
-    }, isPatientInformationLinkSent && "Resend Link", !isPatientInformationLinkSent && "Send Link"), "\xA0\xA0", isPatientInformationLinkSent && "Link is sent to a patient"))), props.sendBy == "Link" ? /*#__PURE__*/_react.default.createElement("button", {
+    }, isPatientInformationLinkSent && "Resend Link", !isPatientInformationLinkSent && "Send Link"), "\xA0\xA0", isPatientInformationLinkSent && "Link has been sent to patient"))), props.sendBy == "Link" ? /*#__PURE__*/_react.default.createElement("button", {
       type: "submit",
       className: "btn btn-primary",
       disabled: props.isSubmitted
@@ -1905,11 +1955,11 @@ const PatientForm = props => {
       className: "col-md-2 col-2 text-left"
     }, /*#__PURE__*/_react.default.createElement("button", {
       onClick: e => _router.default.push("/super-dtrf"),
-      className: "btn btn-primary mr-2"
+      className: "btn btn-primary"
     }, "Exit")), /*#__PURE__*/_react.default.createElement("div", {
-      className: "col-md-10 col-10 text-right "
+      className: props.fromSuperDtrf ? "col-md-10 col-10 text-right" : "col-md-12 col-12 text-right"
     }, /*#__PURE__*/_react.default.createElement("div", {
-      className: "formButttonCenter"
+      className: "formButtonCenter"
     }, /*#__PURE__*/_react.default.createElement("button", {
       onClick: handleOnClickPrevious,
       className: "btn btn-primary mr-2",

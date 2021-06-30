@@ -27,6 +27,10 @@ var _Auth = _interopRequireDefault(require("../../helper/Auth"));
 
 var _async = _interopRequireDefault(require("react-select/async"));
 
+var _formData = require("../../actions/formData");
+
+var _fileupload = require("../../actions/fileupload");
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function _getRequireWildcardCache(nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
@@ -139,6 +143,13 @@ const DoctorInfo = props => {
     }
 
     if (e) {
+      if (props.formDataRedux.test_info) {
+        const data = props.formDataRedux.test_info;
+        delete data.test_info;
+        props.setFormData(data);
+        props.clearFiles();
+      }
+
       if (e.practice_type == 'Gynaecologist-Obstetrician') {
         setIsGyno(true);
       } else {
@@ -229,15 +240,13 @@ const DoctorInfo = props => {
     FirstFormRef.current.validateForm();
     console.log("FIRST FROM ERRORS", FirstFormRef.current.errors);
 
-    if (props.fromDtrfFront) {
-      if (!isDoctorNameValid) {
-        console.log("1");
-        setShowDoctorErrorMessage(true);
-        return;
-      } else {
-        setShowDoctorErrorMessage(false);
-        console.log("2");
-      }
+    if (!isDoctorNameValid) {
+      console.log("1");
+      setShowDoctorErrorMessage(true);
+      return;
+    } else {
+      setShowDoctorErrorMessage(false);
+      console.log("2");
     }
 
     if (isNewReferralDoctor) {
@@ -492,6 +501,7 @@ const DoctorInfo = props => {
 };
 
 const mapStateToProps = state => ({
+  formDataRedux: state.formData.formData,
   doctorName: state.formData.formData.doctor_info ? state.formData.formData.doctor_info.doctorName : 1,
   referenceDoctorName: state.formData.formData.doctor_info ? state.formData.formData.doctor_info.referenceDoctorName : 1,
   referralReason: state.formData.formData.doctor_info ? state.formData.formData.doctor_info.referralReason : 1,
@@ -500,7 +510,9 @@ const mapStateToProps = state => ({
 
 var _default = (0, _reactRedux.connect)(mapStateToProps, {
   getDoctors: _doctors.getDoctors,
-  getReferralDoctors: _doctors.getReferralDoctors
+  getReferralDoctors: _doctors.getReferralDoctors,
+  setFormData: _formData.setFormData,
+  clearFiles: _fileupload.clearFiles
 })(DoctorInfo);
 
 exports.default = _default;
