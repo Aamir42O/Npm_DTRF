@@ -12,7 +12,6 @@ var _CancelOutlined = _interopRequireDefault(require("@material-ui/icons/CancelO
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 const FileUploadDisplay = /*#__PURE__*/_react.default.forwardRef((props, ref) => {
-  console.log(props);
   return /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
     className: "col-12 col-md-12 form-group"
   }, /*#__PURE__*/_react.default.createElement("div", {

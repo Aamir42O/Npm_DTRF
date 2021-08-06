@@ -1,5 +1,7 @@
 import React from "react"
 import { Formik, Form, Field, ErrorMessage } from "formik";
+import { MousePopover } from "../../helper/commonHelper";
+
 
 const RadioField = (props) => {
 
@@ -18,6 +20,10 @@ const RadioField = (props) => {
                     {props.mandatory &&
                         <span className="marked">*</span>
                     }
+                    {
+                        props.toolTip &&
+                        <MousePopover content={props.toolTip} />
+                    }
 
                 </label>
                 <br />
@@ -30,7 +36,7 @@ const RadioField = (props) => {
                                     type="radio"
                                     name={props.name}
                                     value={option.value}
-                                    disabled={props.disabled}
+                                    disabled={props.isDisabled}
 
                                 />
                                 <div className="state">

@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.setIsComplete = exports.setSentToBdm = exports.setRole = exports.setAuthenticated = exports.setSendBy = exports.setDtrfToken = exports.setRefToken = void 0;
+exports.setPatientFoundFlag = exports.setAccessToken = exports.setIsComplete = exports.setSentToBdm = exports.setRole = exports.setAuthenticated = exports.setSendBy = exports.setDtrfToken = exports.setRefToken = void 0;
 
 var _action = require("./action");
 
@@ -69,3 +69,21 @@ const setIsComplete = boolean => dispatch => {
 };
 
 exports.setIsComplete = setIsComplete;
+
+const setAccessToken = token => dispatch => {
+  dispatch({
+    type: _action.SET_ACCESS_TOKEN,
+    payload: token
+  });
+};
+
+exports.setAccessToken = setAccessToken;
+
+const setPatientFoundFlag = payload => dispatch => {
+  dispatch({
+    type: _action.PATIENT_FOUND,
+    payload
+  });
+};
+
+exports.setPatientFoundFlag = setPatientFoundFlag;

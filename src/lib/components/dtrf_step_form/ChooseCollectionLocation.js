@@ -15,7 +15,7 @@ const ChooseCollectionLocation = (props) => {
   const [homeChecked, setHomeChecked] = useState(false)
   const [, reRender] = useState()
   const childRef = useRef();
-
+  const formRef = useRef()
   useEffect(() => {
     console.log(props)
     if (testList.length == 0) {
@@ -37,7 +37,6 @@ const ChooseCollectionLocation = (props) => {
     data.dtrf.collectionLocation = values
     formData.append("dtrf_id", JSON.stringify(data.dtrf_id))
     formData.append("dtrf", JSON.stringify(data.dtrf))
-    console.log("INCOMEPLETE FORMDATA SEND", response)
     const response = await props.handleOnClickSave({ ...props.formDataRedux, collectionLocation: values })
     props.setFormData({ ...props.formDataRedux, collectionLocation: values })
 
@@ -117,6 +116,7 @@ const ChooseCollectionLocation = (props) => {
             <fieldset id="valdatinStep1">
               <Formik
                 initialValues={{ location: props.formDataRedux.collectionLocation ? props.formDataRedux.collectionLocation.location : "" }}
+                innerRef={formRef}
                 validate={(values) => {
                   const errors = {};
                   if (props.fromSuperDtrf) {

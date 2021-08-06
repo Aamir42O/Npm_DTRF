@@ -1,4 +1,5 @@
 import React from "react"
+import moment from "moment";
 
 
 
@@ -12,11 +13,12 @@ const DisplayFields = (props) => {
                     props.clinical_info ?
                         <div className={props.className ? props.className : "col-12 col-md-6"}>
                             <div className="form-group mb-0">
-                                <label className="col-form-label col-sm-12">
+                                <label style={{ letterSpacing: "0.3px" }} className="col-form-label col-sm-12">
                                     <b>{props.title}</b>{" "}
                                 </label>
                                 <label className="col-form-label col-sm-12">
-                                    {
+                                    {props.isDate ?
+                                        moment(props.data).format("DD-MM-YYYY") :
                                         props.data
                                     }
                                 </label>
@@ -30,7 +32,8 @@ const DisplayFields = (props) => {
                                     <b>{props.title}</b>{" "}
                                 </label>
                                 <label className="col-form-label col-sm-6">
-                                    {
+                                    {props.isDate ?
+                                        moment(props.data).format("DD-MM-YYYY") :
                                         props.data
                                     }
                                 </label>

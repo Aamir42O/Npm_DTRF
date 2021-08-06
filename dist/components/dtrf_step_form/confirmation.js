@@ -33,6 +33,8 @@ var _commonHelper = require("../../helper/commonHelper");
 
 var _formData = require("../../actions/formData");
 
+var _customValidator = require("../../helper/customValidator");
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function _getRequireWildcardCache(nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
@@ -358,7 +360,10 @@ const Confirmation = props => {
   const sendDtrf = async () => {
     console.log("send DTRF");
     const url = "http://localhost:8184/dtrf/check-verification/" + dtrfId;
-    const response = await (0, _Auth.default)(url);
+    const response = await (0, _Auth.default)(url, "GET", null, {
+      superDtrf: props.fromSuperDtrf,
+      dtrfFront: props.fromDtrfFront
+    });
     console.log(response, "SEND DTRF RESPONSE");
 
     if (response.data.message == "Success") {
@@ -469,359 +474,9 @@ const Confirmation = props => {
 
   const verifyMedicalInfoForm = values => {
     let errors = {};
-
-    if (hasNbs) {
-      if (!values.sampleCollectionDate) {
-        errors.sampleCollectionDate = "Required";
-      }
-
-      if (values.sampleCollectionDate && values.firstFeedingDate) {
-        const diff = moment(values.sampleCollectionDate).diff(values.firstFeedingDate, "days");
-        console.log(diff, "SAMPLE AND FEEDING DATE DIFF");
-
-        if (diff < 1) {
-          errors.sampleCollectionDate = "Date should be greater than First feeding date by 24hrs";
-        } // sample collection date cant be greater than patient Date of birth 
-
-
-        const diff2 = moment(values.sampleCollectionDate).diff(props.formValues.patient_details.dateOfBirth, "days");
-
-        if (diff2 < 0) {
-          errors.sampleCollectionDate = "Date cant be before patients date of birth";
-        }
-      }
-
-      if (values.firstFeedingDate && props.formDataRedux.patient_details.dateOfBirth) {
-        const diff = moment(values.firstFeedingDate).diff(moment().format("YYYY-MM-DD"), "days");
-
-        if (diff > 0) {
-          errors.firstFeedingDate = "Invalid Date";
-        }
-
-        const diff2 = moment(values.firstFeedingDate).diff(props.formDataRedux.patient_details.dateOfBirth, "days");
-
-        if (diff2 < 0) {
-          errors.firstFeedingDate = "Date cant be before patients date of birth";
-        }
-      }
-
-      if (!values.firstFeedingDate) {
-        errors.firstFeedingDate = "Required";
-      }
-
-      if (!values.typeOfFeeding) {
-        errors.typeOfFeeding = "Required";
-      }
-
-      if (!values.hoTransfusion) {
-        errors.hoTransfusion = "Required";
-      } else if (values.hoTransfusion == "Yes") {
-        if (!values.dateOfHoTransfusion) {
-          errors.dateOfHoTransfusion = "Required";
-        } else {
-          const diff = moment(values.dateOfHoTransfusion).diff(moment().format("YYYY-MM-DD"), "days");
-
-          if (diff > 0) {
-            errors.dateOfHoTransfusion = "Invalid Date";
-          }
-        }
-
-        if (values.dateOfHoTransfusion && props.formDataRedux.patient_details.dateOfBirth) {
-          const diff2 = moment(values.dateOfHoTransfusion).diff(props.formValues.patient_details.dateOfBirth, "days");
-          console.log({
-            diff2
-          });
-
-          if (diff2 < 0) {
-            errors.dateOfHoTransfusion = "Date cant be before patients date of birth";
-          }
-        }
-      }
-
-      if (!values.deliveryStatus) {
-        errors.deliveryStatus = "Required";
-      }
-    } else {
-      if (!values.sampleCollectionDate) {
-        errors.sampleCollectionDate = "Required";
-      }
-
-      if (!hasCyto) {
-        if (!values.usgDate) {
-          errors.usgDate = "Required";
-        }
-
-        if (!values.currentGestationalAgeWeeks) {
-          errors.currentGestationalAgeWeeks = "Required";
-        }
-
-        if (!values.currentGestationalAgeDays) {
-          errors.currentGestationalAgeDays = "Required";
-        }
-      }
-
-      if (!values.gestationalAgeWeeks && values.gestationalAgeWeeks != 0) {
-        errors.gestationalAgeWeeks = "Required";
-      }
-
-      if (!values.gestationalAgeDays && values.gestationalAgeDays != 0) {
-        errors.gestationalAgeDays = "Required";
-      }
-    }
-
-    if (hasPns) {
-      if (!values.historyOfDownSyndrome) {
-        errors.historyOfDownSyndrome = "Required";
-      } else if (values.historyOfDownSyndrome == "Yes") {
-        if (!values.confirmatoryTestHDS) {
-          errors.confirmatoryTestHDS = "Required";
-        }
-      }
-
-      if (!values.historyOfEdwardsSyndrome) {
-        errors.historyOfEdwardsSyndrome = "Required";
-      } else if (values.historyOfEdwardsSyndrome == "Yes") {
-        if (!values.confirmatoryTestHES) {
-          errors.confirmatoryTestHES = "Required";
-        }
-      }
-
-      if (!values.historyOfPatauSyndrome) {
-        errors.historyOfPatauSyndrome = "Required";
-      } else if (values.historyOfPatauSyndrome == "Yes") {
-        if (!values.confirmatoryTestHPS) {
-          errors.confirmatoryTestHPS = "Required";
-        }
-      }
-
-      if (!values.diabetesInsulinDependent) {
-        errors.diabetesInsulinDependent = "Required";
-      } else if (values.diabetesInsulinDependent == "Yes") {
-        if (!values.gestational) {
-          errors.gestational = "Required";
-        }
-      }
-
-      if (!values.patientOnHcg) {
-        errors.patientOnHcg = "Required";
-      }
-
-      if (!values.typeOfConception) {
-        errors.typeOfConception = "Required";
-      } else if (values.typeOfConception == "Assisted") {
-        if (!values.typeOfProcedure) {
-          errors.typeOfProcedure = "Required";
-        }
-
-        if (!values.extractionDate) {
-          errors.extractionDate = "Required";
-        }
-
-        if (!values.transferDate) {
-          errors.transferDate = "Required";
-        }
-      } else if (values.typeOfProcedure == "Donor Egg") {
-        if (!values.donorDob) {
-          errors.donorDob = "Required";
-        }
-      }
-
-      if (testTrimester == "First" && values.presentPregnancy != "Twins") {
-        if (!values.crl) {
-          errors.crl = "Required";
-        }
-      }
-
-      if (values.presentPregnancy == "Twins") {
-        if (!values.twinCrl1) {
-          errors.twinCrl1 = "Required";
-        }
-
-        if (!values.twinCrl2) {
-          errors.twinCrl2 = "Required";
-        }
-
-        if (!values.twinNt1) {
-          errors.twinNt1 = "Required";
-        }
-
-        if (!values.twinNt2) {
-          errors.twinNt2 = "Required";
-        }
-      }
-
-      if (testTrimester == "Second") {
-        if (!(values.bpd || values.fl || values.hc || values.crl)) {
-          errors.fl = "At least one should be filled";
-        }
-      }
-
-      if (hasPreEclampsiaTest) {
-        if (!values.bpOrMap) {
-          errors.bpOrMap = "Required";
-        } else {
-          if (values.bpOrMap == "BP") {
-            if (!values.bpMeasurementDate) {
-              errors.bpMeasurementDate = "Required";
-            }
-
-            if (!values.bpLeftSystolic1) {
-              errors.bpLeftSystolic1 = "Required";
-            }
-
-            if (!values.bpLeftDiSystolic1) {
-              errors.bpLeftDiSystolic1 = "Required";
-            }
-
-            if (!values.bpLeftSystolic2) {
-              errors.bpLeftSystolic2 = "Required";
-            }
-
-            if (!values.bpLeftDiSystolic2) {
-              errors.bpLeftDiSystolic2 = "Required";
-            }
-
-            if (!values.bpRightSystolic1) {
-              errors.bpRightSystolic1 = "Required";
-            }
-
-            if (!values.bpRightDiSystolic1) {
-              errors.bpRightDiSystolic1 = "Required";
-            }
-
-            if (!values.bpRightSystolic2) {
-              errors.bpRightSystolic2 = "Required";
-            }
-
-            if (!values.bpRightDiSystolic2) {
-              errors.bpRightDiSystolic2 = "Required";
-            }
-          } else if (values.bpOrMap == "MAP") {
-            if (!values.mapReading1) {
-              errors.mapReading1 = "Required";
-            }
-
-            if (!values.mapReading2) {
-              errors.mapReading2 = "Required";
-            }
-          }
-        }
-
-        if (!values.familyHistoryPreEclampsia) {
-          errors.familyHistoryPreEclampsia = "Required";
-        }
-
-        if (!values.chronicHypertension) {
-          errors.chronicHypertension = "Required";
-        }
-
-        if (!values.uterineArteryPulsativeIndexRightPI) {
-          errors.uterineArteryPulsativeIndexRightPI = "Required";
-        }
-
-        if (!values.uterineArteryPulsativeIndexLeftPI) {
-          errors.uterineArteryPulsativeIndexLeftPI = "Required";
-        }
-
-        if (!values.familyHistoryPreEclampsia) {
-          errors.familyHistoryPreEclampsia = "Required";
-        }
-
-        if (!values.chronicHypertension) {
-          errors.chronicHypertension = "Required";
-        }
-
-        if (!values.uterineArteryPulsativeIndexRightPI) {
-          errors.uterineArteryPulsativeIndexRightPI = "Required";
-        }
-
-        if (!values.uterineArteryPulsativeIndexLeftPI) {
-          errors.uterineArteryPulsativeIndexLeftPI = "Required";
-        }
-      }
-    }
-
-    if (hasNipt) {
-      if (values.presentPregnancy == "Vanishing Twin") {
-        if (!values.dateOfTwinVanishOrReduced) {
-          errors.dateOfTwinVanishOrReduced = "Required";
-        }
-      }
-
-      if (!values.ivfPregnancy) {
-        errors.ivfPregnancy = "Required";
-      } else if (values.ivfPregnancy == "Yes") {
-        if (!values.eggUsed) {
-          errors.eggUsed = "Required";
-        }
-
-        if (!values.ageAtEggRetrieval) {
-          errors.ageAtEggRetrieval = "Required";
-        }
-      }
-
-      if (!values.surrogate) {
-        errors.surrogate = "Required";
-      }
-
-      if (!values.previousPregnancy) {
-        errors.previousPregnancy = "Required";
-      } else if (values.previousPregnancy == "Yes") {
-        if (!values.prevPregDate) {
-          errors.prevPregDate = "Required";
-        }
-
-        if (!values.spontaneousAbortion) {
-          errors.spontaneousAbortion = "Required";
-        }
-
-        if (!values.terminationPregnancy) {
-          errors.terminationPregnancy = "Required";
-        }
-      }
-
-      if (values.referralReason.length > 0) {
-        values.referralReason.map(reason => {
-          if (reason.value == "previous pregnancy affected by genetic disorders" && !values.conditionAffectsPreviousPregnancy) {
-            errors.conditionAffectsPreviousPregnancy = "Required";
-          }
-
-          if (reason.value == "patient is a carrier of genetic disorders" && !values.conditionPatientIsCarrierOf) {
-            errors.conditionPatientIsCarrierOf = "Required";
-          }
-
-          if (reason.value == "serum screen risk") {
-            if (!values.t21RiskScore) {
-              errors.t21RiskScore = "Required";
-            }
-
-            if (!values.t18RiskScore) {
-              errors.t18RiskScore = "Required";
-            }
-
-            if (!values.t13RiskScore) {
-              errors.t13RiskScore = "Required";
-            }
-          }
-
-          if (reason.value == "family history" && !values.familyHistory) {
-            errors.familyHistory = "Required";
-          }
-
-          if (reason.value == "others" && !values.otherReferralReason) {
-            errors.otherReferralReason = "Required";
-          }
-        });
-      } else {
-        errors.referralReason = "Required";
-      }
-    }
+    errors = (0, _customValidator.validateField)(values);
 
     if (hasCyto) {
-      if (values.referralReason.length == 0) {
-        errors.referralReason = "Atleast One is Required";
-      }
-
       if (values.referralReason.length > 0) {
         if (values.referralReason.includes("Family History of any chromosomal abnormality")) {
           if (!values.familyHistory) {
@@ -853,49 +508,358 @@ const Confirmation = props => {
           }
         }
       }
+    } // if (hasNbs) {
+    //   if (!values.sampleCollectionDate) {
+    //     errors.sampleCollectionDate = "Required"
+    //   }
+    //   if (values.sampleCollectionDate && values.firstFeedingDate) {
+    //     const diff = moment(values.sampleCollectionDate).diff(values.firstFeedingDate, "days")
+    //     console.log(diff, "SAMPLE AND FEEDING DATE DIFF")
+    //     if (diff < 1) {
+    //       errors.sampleCollectionDate = "Date should be greater than First feeding date by 24hrs"
+    //     }
+    //     // sample collection date cant be greater than patient Date of birth 
+    //     const diff2 = moment(values.sampleCollectionDate).diff(props.formValues.patient_details.dateOfBirth, "days")
+    //     if (diff2 < 0) {
+    //       errors.sampleCollectionDate = "Date cant be before patients date of birth"
+    //     }
+    //   }
+    //   if (values.firstFeedingDate && props.formDataRedux.patient_details.dateOfBirth) {
+    //     const diff = moment(values.firstFeedingDate).diff(moment().format("YYYY-MM-DD"), "days")
+    //     if (diff > 0) {
+    //       errors.firstFeedingDate = "Invalid Date"
+    //     }
+    //     const diff2 = moment(values.firstFeedingDate).diff(props.formDataRedux.patient_details.dateOfBirth, "days")
+    //     if (diff2 < 0) {
+    //       errors.firstFeedingDate = "Date cant be before patients date of birth"
+    //     }
+    //   }
+    //   if (!values.firstFeedingDate) {
+    //     errors.firstFeedingDate = "Required"
+    //   }
+    //   if (!values.typeOfFeeding) {
+    //     errors.typeOfFeeding = "Required"
+    //   }
+    //   if (!values.hoTransfusion) {
+    //     errors.hoTransfusion = "Required"
+    //   } else if (values.hoTransfusion == "Yes") {
+    //     if (!values.dateOfHoTransfusion) {
+    //       errors.dateOfHoTransfusion = "Required"
+    //     } else {
+    //       const diff = moment(values.dateOfHoTransfusion).diff(moment().format("YYYY-MM-DD"), "days")
+    //       if (diff > 0) {
+    //         errors.dateOfHoTransfusion = "Invalid Date"
+    //       }
+    //     }
+    //     if (values.dateOfHoTransfusion && props.formDataRedux.patient_details.dateOfBirth) {
+    //       const diff2 = moment(values.dateOfHoTransfusion).diff(props.formValues.patient_details.dateOfBirth, "days")
+    //       console.log({ diff2 })
+    //       if (diff2 < 0) {
+    //         errors.dateOfHoTransfusion = "Date cant be before patients date of birth"
+    //       }
+    //     }
+    //   }
+    //   if (!values.deliveryStatus) {
+    //     errors.deliveryStatus = "Required"
+    //   }
+    // } else {
+    //   if (!values.sampleCollectionDate) {
+    //     errors.sampleCollectionDate = "Required"
+    //   }
+    //   if (!hasCyto) {
+    //     if (!values.usgDate) {
+    //       errors.usgDate = "Required"
+    //     }
+    //     if (!values.currentGestationalAgeWeeks) {
+    //       errors.currentGestationalAgeWeeks = "Required"
+    //     }
+    //     if (!values.currentGestationalAgeDays) {
+    //       errors.currentGestationalAgeDays = "Required"
+    //     }
+    //   }
+    //   if (!values.gestationalAgeWeeks && values.gestationalAgeWeeks != 0) {
+    //     errors.gestationalAgeWeeks = "Required";
+    //   }
+    //   if (!values.gestationalAgeDays && values.gestationalAgeDays != 0) {
+    //     errors.gestationalAgeDays = "Required";
+    //   }
+    // }
+    // if (hasPns) {
+    //   if (!values.historyOfDownSyndrome) {
+    //     errors.historyOfDownSyndrome = "Required";
+    //   } else if (values.historyOfDownSyndrome == "Yes") {
+    //     if (!values.confirmatoryTestHDS) {
+    //       errors.confirmatoryTestHDS = "Required"
+    //     }
+    //   }
+    //   if (!values.historyOfEdwardsSyndrome) {
+    //     errors.historyOfEdwardsSyndrome = "Required";
+    //   } else if (values.historyOfEdwardsSyndrome == "Yes") {
+    //     if (!values.confirmatoryTestHES) {
+    //       errors.confirmatoryTestHES = "Required"
+    //     }
+    //   }
+    //   if (!values.historyOfPatauSyndrome) {
+    //     errors.historyOfPatauSyndrome = "Required"
+    //   } else if (values.historyOfPatauSyndrome == "Yes") {
+    //     if (!values.confirmatoryTestHPS) {
+    //       errors.confirmatoryTestHPS = "Required"
+    //     }
+    //   }
+    //   if (!values.diabetesInsulinDependent) {
+    //     errors.diabetesInsulinDependent = "Required";
+    //   } else if (values.diabetesInsulinDependent == "Yes") {
+    //   }
+    //   if (!values.patientOnHcg) {
+    //     errors.patientOnHcg = "Required";
+    //   }
+    //   if (!values.typeOfConception) {
+    //     errors.typeOfConception = "Required";
+    //   } else if (values.typeOfConception == "Assisted") {
+    //     if (!values.typeOfProcedure) {
+    //       errors.typeOfProcedure = "Required";
+    //     }
+    //     if (!values.extractionDate) {
+    //       errors.extractionDate = "Required";
+    //     }
+    //     if (!values.transferDate) {
+    //       errors.transferDate = "Required";
+    //     }
+    //   } else if (values.typeOfProcedure == "Donor Egg") {
+    //     if (!values.donorDob) {
+    //       errors.donorDob = "Required";
+    //     }
+    //   }
+    //   if (testTrimester == "First" && values.presentPregnancy != "Twins") {
+    //     if (!values.crl) {
+    //       errors.crl = "Required";
+    //     }
+    //   }
+    //   if (values.presentPregnancy == "Twins") {
+    //     if (!values.twinCrl1) {
+    //       errors.twinCrl1 = "Required"
+    //     }
+    //     if (!values.twinCrl2) {
+    //       errors.twinCrl2 = "Required"
+    //     }
+    //     if (!values.twinNt1) {
+    //       errors.twinNt1 = "Required";
+    //     }
+    //     if (!values.twinNt2) {
+    //       errors.twinNt2 = "Required";
+    //     }
+    //   }
+    //   if (testTrimester == "Second") {
+    //     if (!(values.bpd || values.fl || values.hc || values.crl)) {
+    //       errors.fl = "At least one should be filled";
+    //     }
+    //   }
+    //   if (hasPreEclampsiaTest) {
+    //     if (!values.bpOrMap) {
+    //       errors.bpOrMap = "Required"
+    //     } else {
+    //       if (values.bpOrMap == "BP") {
+    //         if (!values.bpMeasurementDate) {
+    //           errors.bpMeasurementDate = "Required"
+    //         }
+    //         if (!values.bpLeftSystolic1) {
+    //           errors.bpLeftSystolic1 = "Required"
+    //         }
+    //         if (!values.bpLeftDiSystolic1) {
+    //           errors.bpLeftDiSystolic1 = "Required"
+    //         }
+    //         if (!values.bpLeftSystolic2) {
+    //           errors.bpLeftSystolic2 = "Required"
+    //         }
+    //         if (!values.bpLeftDiSystolic2) {
+    //           errors.bpLeftDiSystolic2 = "Required"
+    //         }
+    //         if (!values.bpRightSystolic1) {
+    //           errors.bpRightSystolic1 = "Required"
+    //         }
+    //         if (!values.bpRightDiSystolic1) {
+    //           errors.bpRightDiSystolic1 = "Required"
+    //         }
+    //         if (!values.bpRightSystolic2) {
+    //           errors.bpRightSystolic2 = "Required"
+    //         }
+    //         if (!values.bpRightDiSystolic2) {
+    //           errors.bpRightDiSystolic2 = "Required"
+    //         }
+    //       } else if (values.bpOrMap == "MAP") {
+    //         if (!values.mapReading1) {
+    //           errors.mapReading1 = "Required"
+    //         }
+    //         if (!values.mapReading2) {
+    //           errors.mapReading2 = "Required"
+    //         }
+    //       }
+    //     }
+    //     if (!values.familyHistoryPreEclampsia) {
+    //       errors.familyHistoryPreEclampsia = "Required"
+    //     }
+    //     if (!values.chronicHypertension) {
+    //       errors.chronicHypertension = "Required"
+    //     }
+    //     if (!values.uterineArteryPulsativeIndexRightPI) {
+    //       errors.uterineArteryPulsativeIndexRightPI = "Required"
+    //     }
+    //     if (!values.uterineArteryPulsativeIndexLeftPI) {
+    //       errors.uterineArteryPulsativeIndexLeftPI = "Required"
+    //     }
+    //     if (!values.familyHistoryPreEclampsia) {
+    //       errors.familyHistoryPreEclampsia = "Required"
+    //     }
+    //     if (!values.chronicHypertension) {
+    //       errors.chronicHypertension = "Required"
+    //     }
+    //     if (!values.uterineArteryPulsativeIndexRightPI) {
+    //       errors.uterineArteryPulsativeIndexRightPI = "Required"
+    //     }
+    //     if (!values.uterineArteryPulsativeIndexLeftPI) {
+    //       errors.uterineArteryPulsativeIndexLeftPI = "Required"
+    //     }
+    //   }
+    // }
+    // if (hasNipt) {
+    //   if (values.presentPregnancy == "Vanishing Twin") {
+    //     if (!values.dateOfTwinVanishOrReduced) {
+    //       errors.dateOfTwinVanishOrReduced = "Required";
+    //     }
+    //   }
+    //   if (!values.ivfPregnancy) {
+    //     errors.ivfPregnancy = "Required";
+    //   } else if (values.ivfPregnancy == "Yes") {
+    //     if (!values.eggUsed) {
+    //       errors.eggUsed = "Required";
+    //     }
+    //     if (!values.ageAtEggRetrieval) {
+    //       errors.ageAtEggRetrieval = "Required";
+    //     }
+    //   }
+    //   if (!values.surrogate) {
+    //     errors.surrogate = "Required";
+    //   }
+    //   if (!values.previousPregnancy) {
+    //     errors.previousPregnancy = "Required"
+    //   } else if (values.previousPregnancy == "Yes") {
+    //     if (!values.prevPregDate) {
+    //       errors.prevPregDate = "Required"
+    //     }
+    //     if (!values.spontaneousAbortion) {
+    //       errors.spontaneousAbortion = "Required"
+    //     }
+    //     if (!values.terminationPregnancy) {
+    //       errors.terminationPregnancy = "Required"
+    //     }
+    //   }
+    //   if (values.referralReason.length > 0) {
+    //     values.referralReason.map((reason) => {
+    //       if (reason.value == "previous pregnancy affected by genetic disorders" && !values.conditionAffectsPreviousPregnancy) {
+    //         errors.conditionAffectsPreviousPregnancy = "Required"
+    //       }
+    //       if (reason.value ==
+    //         "patient is a carrier of genetic disorders" &&
+    //         !values.conditionPatientIsCarrierOf) {
+    //         errors.conditionPatientIsCarrierOf = "Required";
+    //       }
+    //       if (
+    //         reason.value ==
+    //         "serum screen risk"
+    //       ) {
+    //         if (!values.t21RiskScore) {
+    //           errors.t21RiskScore = "Required";
+    //         }
+    //         if (!values.t18RiskScore) {
+    //           errors.t18RiskScore = "Required";
+    //         }
+    //         if (!values.t13RiskScore) {
+    //           errors.t13RiskScore = "Required";
+    //         }
+    //       }
+    //       if (
+    //         reason.value ==
+    //         "family history" &&
+    //         !values.familyHistory
+    //       ) {
+    //         errors.familyHistory = "Required";
+    //       }
+    //       if (reason.value == "others" && !values.otherReferralReason) {
+    //         errors.otherReferralReason = "Required";
+    //       }
+    //     })
+    //   }
+    //   else {
+    //     errors.referralReason = "Required"
+    //   }
+    // }
+    // if (hasCyto) {
+    //   if (values.referralReason.length == 0) {
+    //     errors.referralReason = "Atleast One is Required"
+    //   }
+    //   if (values.referralReason.length > 0) {
+    //     if (values.referralReason.includes("Family History of any chromosomal abnormality")) {
+    //       if (!values.familyHistory) {
+    //         errors.referralReason = "Please fill the checked Field"
+    //       }
+    //     }
+    //     if (values.referralReason.includes("Advance Maternal Age")) {
+    //       if (!values.advanceMaternalAge) {
+    //         errors.referralReason = "Please fill the checked Field"
+    //       }
+    //     }
+    //     if (values.referralReason.includes("Genetic Disease in Father/Mother/Sibling")) {
+    //       if (!values.geneticDiseaseInFMS) {
+    //         errors.referralReason = "Please fill the checked Field"
+    //       }
+    //     }
+    //     if (values.referralReason.includes("Consanguinity")) {
+    //       if (!values.consanguinity) {
+    //         errors.referralReason = "Please fill the checked Field"
+    //       }
+    //     }
+    //     if (values.referralReason.includes("Others")) {
+    //       if (!values.Others) {
+    //         errors.referralReason = "Please fill the checked Field"
+    //       }
+    //     }
+    //   }
+    //   if (hasCytoPrenatal) {
+    //     if (!values.maternalAge) {
+    //       errors.maternalAge = "Required";
+    //     }
+    //     if (!values.motherGeneticDisease) {
+    //       errors.motherGeneticDisease = "Required";
+    //     }
+    //     if (!values.fatherGeneticDisease) {
+    //       errors.fatherGeneticDisease = "Required";
+    //     }
+    //     if (!values.siblingGeneticDisease) {
+    //       errors.siblingGeneticDisease = "Required";
+    //     }
+    //   }
+    //   if (hasPoc || hasCytoPrenatal) {
+    //     if (!values.consanguinity) {
+    //       errors.consanguinity = "Required"
+    //     }
+    //   }
+    // }
+    // if (hasNipt || hasPns) {
+    //   if (!values.presentPregnancy) {
+    //     errors.presentPregnancy = "Required";
+    //   }
+    //   if (values.presentPregnancy == "Twins") {
+    //     if (!values.twinType) {
+    //       errors.twinType = "Required"
+    //     }
+    //     if (values.twinType == "Monochorionic") {
+    //       if (!values.monochorionicType) {
+    //         values.monochorionicType = "Required"
+    //       }
+    //     }
+    //   }
+    // }
 
-      if (hasCytoPrenatal) {
-        if (!values.maternalAge) {
-          errors.maternalAge = "Required";
-        }
-
-        if (!values.motherGeneticDisease) {
-          errors.motherGeneticDisease = "Required";
-        }
-
-        if (!values.fatherGeneticDisease) {
-          errors.fatherGeneticDisease = "Required";
-        }
-
-        if (!values.siblingGeneticDisease) {
-          errors.siblingGeneticDisease = "Required";
-        }
-      }
-
-      if (hasPoc || hasCytoPrenatal) {
-        if (!values.consanguinity) {
-          errors.consanguinity = "Required";
-        }
-      }
-    }
-
-    if (hasNipt || hasPns) {
-      if (!values.presentPregnancy) {
-        errors.presentPregnancy = "Required";
-      }
-
-      if (values.presentPregnancy == "Twins") {
-        if (!values.twinType) {
-          errors.twinType = "Required";
-        }
-
-        if (values.twinType == "Monochorionic") {
-          if (!values.monochorionicType) {
-            values.monochorionicType = "Required";
-          }
-        }
-      }
-    }
 
     console.log("ERRORS IN Clinical FORM", errors);
     return errors;
@@ -1057,13 +1021,16 @@ const Confirmation = props => {
       return (0, _commonHelper.warningMessage)("Please select Institute before submitting to BDM");
     }
 
-    const url = "http://65.1.45.74:8187/v1/dtrf/assign-bdm/" + props.Token.dtrfToken;
+    const url = process.env.NEXT_PUBLIC_SUBMIT_TO_BDM + "/" + props.Token.dtrfToken;
     let data = {};
     data.institute_id = props.formDataRedux.institute_info.instituteName.lilac_id;
-    const response = await (0, _Auth.default)(url, "POST", data);
+    const response = await (0, _Auth.default)(url, "POST", data, {
+      superDtrf: props.fromSuperDtrf,
+      dtrfFront: props.fromDtrfFront
+    });
 
     if (response.status == 200) {
-      (0, _commonHelper.successMessage)("Submitted to BDM succesfully");
+      (0, _commonHelper.successMessage)("Submitted to BDM successfully");
 
       _router.default.push("/super-dtrf");
     } else {
@@ -1136,11 +1103,11 @@ const Confirmation = props => {
     dtrfFormData.dtrf_token = props.Token.dtrfToken;
     dtrfFormData.onlySaveDtrf = true;
 
-    if (fromButton == "sendDtrf") {
-      dtrfFormData.sendByDtrf = true;
+    if (fromButton == "submitAfterPatientConfirmation") {
+      dtrfFormData.submitAfterPatientConfirmation = true;
       dtrfFormData.dtrfId = dtrfId;
     } else {
-      dtrfFormData.sendByDtrf = false;
+      dtrfFormData.submitAfterPatientConfirmation = false;
     }
 
     const data = JSON.stringify(dtrfFormData);
@@ -1148,7 +1115,10 @@ const Confirmation = props => {
     console.log("FORMDATA", dtrfFormData);
     const url = process.env.NEXT_PUBLIC_DTRF_SAVE;
     let response;
-    response = await (0, _Auth.default)(url, "POST", formData, "multi");
+    response = await (0, _Auth.default)(url, "POST", formData, {
+      superDtrf: props.fromSuperDtrf,
+      dtrfFront: props.fromDtrfFront
+    });
     console.log(response, "DTRF SAVE RESPONSE");
 
     if (response) {
@@ -1157,22 +1127,22 @@ const Confirmation = props => {
       if (response.status == 200) {
         console.log(response.message);
 
-        if (fromButton == "sendLink") {
+        if (fromButton == "sendLink" && response.data.message == "Patient Link Sent") {
           console.log("setLinkedSent");
           setLinkedSent(true);
           setShowPrevious(false);
           setDtrfId(response.data.data);
         }
 
-        if (fromButton == "sendDtrf") {
-          if (response.data.message == "Rejected") {
+        if (fromButton == "submitAfterPatientConfirmation") {
+          if (response.data.data.message == "Rejected") {
             setShowLoader(false);
             setShowPrevious(true);
             setLinkedSent(false);
             return (0, _commonHelper.errorMessage)("Patient Rejected");
           }
 
-          if (response.data.message == "Pending") {
+          if (response.data.data.message == "Pending") {
             setShowLoader(false);
             return (0, _commonHelper.infoMessage)("Patent Confirmation Pending");
           }
@@ -1228,7 +1198,17 @@ const Confirmation = props => {
       "dtrf_token": props.Token.dtrfToken
     };
     const url = process.env.NEXT_PUBLIC_SEND_KYC_LINK;
-    const res = await (0, _Auth.default)(url, "POST", _objectSpread({}, formData)); // const res = await axios.post(process.env.NEXT_PUBLIC_SEND_KYC_LINK, { ...formData })
+    const res = await (0, _Auth.default)(url, "POST", _objectSpread({}, formData), {
+      superDtrf: props.fromSuperDtrf,
+      dtrfFront: props.fromDtrfFront
+    });
+
+    if (res) {
+      (0, _commonHelper.successMessage)("Link has been sent to patient");
+    } else {
+      (0, _commonHelper.errorMessage)("Error in sending link");
+    } // const res = await axios.post(process.env.NEXT_PUBLIC_SEND_KYC_LINK, { ...formData })
+
 
     console.log(res);
   }; // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!~~~CLOSE!!!!!!!!!!!!!~!~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1315,7 +1295,7 @@ const Confirmation = props => {
     disabled: submitted,
     type: "button",
     className: "btn btn-primary mr-2",
-    name: "sendDtrf" // onClick={onSubmit}
+    name: "submitAfterPatientConfirmation" // onClick={onSubmit}
     ,
     onClick: tempOnSubmit
   }, "Submit Dtrf")) : /*#__PURE__*/_react.default.createElement("button", {

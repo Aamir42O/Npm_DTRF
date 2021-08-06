@@ -21,6 +21,8 @@ var _router = _interopRequireDefault(require("next/router"));
 
 var _jsCookie = _interopRequireDefault(require("js-cookie"));
 
+var _Auth = _interopRequireDefault(require("../../helper/Auth"));
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function _getRequireWildcardCache(nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
@@ -34,34 +36,103 @@ function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { va
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 const Payment = props => {
+  console.log(props);
   const [testList, setTestList] = (0, _react.useState)([]);
   const [paysTo, setPaysTo] = (0, _react.useState)("");
   const [totalMrp, setTotalMrp] = (0, _react.useState)(0);
   const [mrpList, setMrpList] = (0, _react.useState)([]);
+  const [priceMargin, setPriceMargin] = (0, _react.useState)([]);
   const [paymentMode, setPaymentMode] = (0, _react.useState)("Cash");
   const [confirmationBy, setConfirmationBy] = (0, _react.useState)("");
   const [, reRender] = (0, _react.useState)();
   const [mrpError, setMrpError] = (0, _react.useState)(false);
   const [instituteType, setInstituteType] = (0, _react.useState)(null);
+  const [showMrpError, setShowMrpError] = (0, _react.useState)(false);
+  const formikRef = (0, _react.useRef)();
   (0, _react.useEffect)(() => {
     console.log("IN use effect", props);
 
     if (!instituteType) {
+      getMrpList();
+
       if (props.fromSuperDtrf) {
         setInstituteType(props.formDataRedux.institute_info.instituteName.institute_type);
       } else if (props.fromDtrfFront) {
         setInstituteType(_jsCookie.default.get("institute_type"));
       }
-    }
+    } // if (testList.length == 0) {
+    //   getTestList();
+    // }
 
-    if (testList.length == 0) {
-      getTestList();
-    }
 
     if (props.formDataRedux.payment) {
       setPaysTo(props.formDataRedux.payment.paysTo);
     }
   });
+
+  const getMrpList = async () => {
+    let instituteId;
+    let testNames = [];
+    let testId = props.formDataRedux.test_info.selectedTests.map(test => {
+      testNames.push(test.test_name);
+      return test.lilac_test_id;
+    });
+
+    if (props.fromSuperDtrf) {
+      instituteId = props.formDataRedux.institute_info.instituteName.lilac_id;
+    }
+
+    const url = process.env.NEXT_PUBLIC_GET_PRICING;
+    console.log(url);
+    const res = await (0, _Auth.default)(url, "POST", {
+      instituteId,
+      testId,
+      testNames
+    }, {
+      superDtrf: props.fromSuperDtrf,
+      dtrfFront: props.fromDtrfFront
+    });
+    console.log("Pricing response", res);
+
+    if (res) {
+      let total = 0;
+      let newMrpList = [];
+      let marginOfPrice = [];
+      res.data.data.pricing.map(test => {
+        newMrpList.push({
+          mrp: test.mrp
+        });
+        marginOfPrice.push({
+          mrp: test.mrp,
+          transfer_rate: test.transfer_rate
+        });
+        total += test.mrp;
+        return total;
+      });
+
+      if (props.formDataRedux.payment) {
+        newMrpList = [];
+        total = 0;
+        props.formDataRedux.payment.price_entered.map(test => {
+          newMrpList.push({
+            mrp: test.mrp
+          });
+          total += test.mrp;
+          return total;
+        });
+      }
+
+      setMrpList(newMrpList);
+      setPriceMargin(marginOfPrice);
+      setTestList(props.formDataRedux.test_info.selectedTests);
+      console.log(newMrpList);
+      setTotalMrp(total);
+    } else {
+      (0, _commonHelper.errorMessage)("Error in Fetching Price");
+    }
+  };
+
+  console.log("TESTLIST && mrplist", testList, mrpList);
 
   const getTestList = () => {
     console.log("Inside GetTEstLIst");
@@ -94,7 +165,7 @@ const Payment = props => {
 
         console.log(mrpList);
         setMrpList(mrpList);
-        setTotalMrp(total);
+        setTotalMrp(total); // getMrpList()
       }
     }
   };
@@ -102,7 +173,8 @@ const Payment = props => {
   const setTotalPrice = mrpList => {
     let total = 0;
     mrpList.map(mrp => {
-      total += mrp.mrp;
+      console.log("mrpList", mrp);
+      total += parseInt(mrp.mrp);
     });
     console.log(total);
     setTotalMrp(total);
@@ -172,6 +244,10 @@ const Payment = props => {
       return;
     }
 
+    if (showMrpError) {
+      return;
+    }
+
     if (props.formValues.collectionLocation.location == "Home") {
       console.log("home location");
       props.handleOnClickNext("payment", {
@@ -216,7 +292,7 @@ const Payment = props => {
     let isnum = /^\d+$/.test(e.target.value);
 
     if (!isnum) {
-      mrpList[e.target.name].mrp = testList[e.target.name].transfer_rate;
+      mrpList[e.target.name].mrp = priceMargin[e.target.name].transfer_rate;
       setMrpList(mrpList);
       setTotalPrice(mrpList);
     } else {
@@ -226,16 +302,21 @@ const Payment = props => {
     console.log(isnum, "INSUM REG");
 
     if (isnum) {
-      if (testList[e.target.name].transfer_rate <= e.target.value && e.target.value <= testList[e.target.name].mrp) {
+      if (priceMargin[e.target.name].transfer_rate <= e.target.value && e.target.value <= priceMargin[e.target.name].mrp) {
         mrpList[e.target.name].mrp = parseInt(e.target.value);
         setMrpList(mrpList);
         setTotalPrice(mrpList);
+        setShowMrpError(false);
         reRender({});
       } else {
-        if (testList[e.target.name].transfer_rate > e.target.value) {
-          mrpList[e.target.name].mrp = testList[e.target.name].transfer_rate;
-        } else if (e.target.value > testList[e.target.name].mrp) {
-          mrpList[e.target.name].mrp = testList[e.target.name].mrp;
+        if (priceMargin[e.target.name].transfer_rate > e.target.value) {
+          // mrpList[e.target.name].mrp = priceMargin[e.target.name].transfer_rate
+          setShowMrpError(true);
+        } else if (e.target.value > priceMargin[e.target.name].mrp) {
+          if (instituteType != 1) {
+            // mrpList[e.target.name].mrp = testList[e.target.name].mrp
+            setShowMrpError(true);
+          }
         }
 
         setMrpList(mrpList);
@@ -248,7 +329,7 @@ const Payment = props => {
   const handleMrpChange = e => {
     console.log(e.target.value, "ISNUM");
 
-    if (testList[e.target.name].transfer_rate <= e.target.value && e.target.value <= testList[e.target.name].mrp) {
+    if (priceMargin[e.target.name].transfer_rate <= e.target.value && e.target.value <= priceMargin[e.target.name].mrp) {
       setMrpError(false);
     } else {
       setMrpError(true);
@@ -266,9 +347,10 @@ const Payment = props => {
   //   console.log();
   //   setConfirmationBy(e.target.value)
   // }
+  // && (testList.length > 0) && (mrpList.length > 0)
 
 
-  return /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
+  return /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, instituteType && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
     className: "customWrap"
   }, /*#__PURE__*/_react.default.createElement("div", {
     className: "row"
@@ -277,10 +359,11 @@ const Payment = props => {
   }, /*#__PURE__*/_react.default.createElement("fieldset", {
     id: "valdatinStep1"
   }, /*#__PURE__*/_react.default.createElement(_formik.Formik, {
+    innerRef: formikRef,
     initialValues: {
-      paysTo: instituteType == 1 ? "Institute" : (instituteType == 2 || instituteType == 3 || instituteType == 4) && "Lab",
+      paysTo: instituteType == 1 ? "Institute" : "Lab",
       confirmationBy: props.payment != 1 ? props.payment.confirmationBy : "",
-      paymentMode: instituteType == 2 || instituteType == 3 ? "Cash" : instituteType == 4 && ""
+      paymentMode: props.payment != 1 ? props.payment.paymentMode : instituteType == 2 || instituteType == 3 ? "Cash" : instituteType == 4 ? instituteType == 4 : ""
     },
     validate: values => {
       const errors = {};
@@ -354,7 +437,7 @@ const Payment = props => {
       className: "col-6"
     }, /*#__PURE__*/_react.default.createElement("div", {
       className: "form-group mb-0"
-    }, /*#__PURE__*/_react.default.createElement("label", null, test.test_name))), /*#__PURE__*/_react.default.createElement("div", {
+    }, /*#__PURE__*/_react.default.createElement("label", null, test.display_test_name))), mrpList.length > 0 && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
       className: "col-6"
     }, /*#__PURE__*/_react.default.createElement("div", {
       className: "form-group mb-0"
@@ -365,8 +448,10 @@ const Payment = props => {
       value: mrpList[id].mrp,
       onBlur: handleMrpValidation,
       onChange: handleMrpChange
-    })))))), /*#__PURE__*/_react.default.createElement("hr", {
-      className: "mb-1 mt-1"
+    })), showMrpError && /*#__PURE__*/_react.default.createElement("div", {
+      className: "formErr"
+    }, "Invalid Amount")))))), /*#__PURE__*/_react.default.createElement("hr", {
+      className: "mb-1 mt-3"
     }), /*#__PURE__*/_react.default.createElement("div", {
       className: "row"
     }, /*#__PURE__*/_react.default.createElement("div", {
@@ -498,7 +583,7 @@ const Payment = props => {
       className: "btn btn-primary",
       disabled: props.formDataRedux.collectionLocation ? props.formDataRedux.collectionLocation.location == "Institute" ? false : true : false
     }, "Next"))))));
-  }))))));
+  })))))), "                     ");
 };
 
 const mapStateToProps = state => ({

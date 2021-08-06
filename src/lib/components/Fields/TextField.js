@@ -22,7 +22,7 @@ const TextField = (props) => {
                             name={props.name}
                             placeholder={props.placeholder}
                             className="form-control"
-                            disabled={props.disabled}
+                            disabled={props.isDisabled}
                             component={props.component}
                             value={props.defaultValue}
                         />
@@ -32,7 +32,7 @@ const TextField = (props) => {
                             name={props.name}
                             placeholder={props.placeholder}
                             className="form-control"
-                            disabled={props.disabled}
+                            disabled={props.isDisabled}
                             component={props.component}
                         />
 

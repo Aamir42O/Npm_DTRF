@@ -23,7 +23,7 @@ const TextField = props => {
     name: props.name,
     placeholder: props.placeholder,
     className: "form-control",
-    disabled: props.disabled,
+    disabled: props.isDisabled,
     component: props.component,
     value: props.defaultValue
   }) : /*#__PURE__*/_react.default.createElement(_formik.Field, {
@@ -31,7 +31,7 @@ const TextField = props => {
     name: props.name,
     placeholder: props.placeholder,
     className: "form-control",
-    disabled: props.disabled,
+    disabled: props.isDisabled,
     component: props.component
   }), /*#__PURE__*/_react.default.createElement(_formik.ErrorMessage, {
     name: props.name,

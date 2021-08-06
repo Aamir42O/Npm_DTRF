@@ -9,6 +9,8 @@ var _react = _interopRequireDefault(require("react"));
 
 var _formik = require("formik");
 
+var _commonHelper = require("../../helper/commonHelper");
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 const RadioField = props => {
@@ -20,14 +22,16 @@ const RadioField = props => {
     className: "mb-3"
   }, props.title, props.mandatory && /*#__PURE__*/_react.default.createElement("span", {
     className: "marked"
-  }, "*")), /*#__PURE__*/_react.default.createElement("br", null), props.options.map((option, index) => {
+  }, "*"), props.toolTip && /*#__PURE__*/_react.default.createElement(_commonHelper.MousePopover, {
+    content: props.toolTip
+  })), /*#__PURE__*/_react.default.createElement("br", null), props.options.map((option, index) => {
     return /*#__PURE__*/_react.default.createElement("div", {
       className: "pretty p-default p-round"
     }, /*#__PURE__*/_react.default.createElement(_formik.Field, {
       type: "radio",
       name: props.name,
       value: option.value,
-      disabled: props.disabled
+      disabled: props.isDisabled
     }), /*#__PURE__*/_react.default.createElement("div", {
       className: "state"
     }, /*#__PURE__*/_react.default.createElement("label", null, option.label)));

@@ -96,7 +96,12 @@ const PatientDetails = props => {
       props.nextStep();
       console.log(props);
     } else {
-      props.goToStep(5);
+      if (props.fromSuperDtrf) {
+        props.goToStep(6);
+      } else if (props.fromDtrfFront) {
+        props.goToStep(5);
+      }
+
       console.log(props);
     }
   };
@@ -113,7 +118,10 @@ const PatientDetails = props => {
       const search = {
         str: searchString
       };
-      const searchedTestList = await (0, _Auth.default)(url, "GET"); // const searchedTestList = await axios.post(url, search, config);
+      const searchedTestList = await (0, _Auth.default)(url, "GET", null, {
+        superDtrf: props.fromSuperDtrf,
+        dtrfFront: props.fromDtrfFront
+      }); // const searchedTestList = await axios.post(url, search, config);
       // console.log(searchString);
 
       return searchedTestList.data.data.patientSearchList;

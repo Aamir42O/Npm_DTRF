@@ -6,36 +6,87 @@ import { setFormData } from "../../actions/formData";
 import { successMessage, MousePopover, errorMessage, warningMessage, infoMessage } from "../../helper/commonHelper";
 import Router from "next/router";
 import Cookies from "js-cookie"
+import reqWithToken from "../../helper/Auth";
 
 
 
 const Payment = (props) => {
+  console.log(props)
   const [testList, setTestList] = useState([]);
   const [paysTo, setPaysTo] = useState("");
   const [totalMrp, setTotalMrp] = useState(0);
   const [mrpList, setMrpList] = useState([])
+  const [priceMargin, setPriceMargin] = useState([])
   const [paymentMode, setPaymentMode] = useState("Cash")
   const [confirmationBy, setConfirmationBy] = useState("")
   const [, reRender] = useState();
   const [mrpError, setMrpError] = useState(false)
   const [instituteType, setInstituteType] = useState(null)
-
+  const [showMrpError, setShowMrpError] = useState(false)
+  const formikRef = useRef()
   useEffect(() => {
     console.log("IN use effect", props)
     if (!instituteType) {
+      getMrpList()
       if (props.fromSuperDtrf) {
         setInstituteType(props.formDataRedux.institute_info.instituteName.institute_type)
       } else if (props.fromDtrfFront) {
         setInstituteType(Cookies.get("institute_type"))
       }
     }
-    if (testList.length == 0) {
-      getTestList();
-    }
+    // if (testList.length == 0) {
+    //   getTestList();
+    // }
     if (props.formDataRedux.payment) {
       setPaysTo(props.formDataRedux.payment.paysTo)
     }
   });
+  const getMrpList = async () => {
+
+
+    let instituteId
+    let testNames = []
+    let testId = props.formDataRedux.test_info.selectedTests.map((test) => {
+      testNames.push(test.test_name)
+      return test.lilac_test_id
+    })
+    if (props.fromSuperDtrf) {
+      instituteId = props.formDataRedux.institute_info.instituteName.lilac_id
+    }
+    const url = process.env.NEXT_PUBLIC_GET_PRICING
+    console.log(url)
+    const res = await reqWithToken(url, "POST", { instituteId, testId, testNames }, { superDtrf: props.fromSuperDtrf, dtrfFront: props.fromDtrfFront })
+    console.log("Pricing response", res)
+    if (res) {
+      let total = 0;
+      let newMrpList = []
+      let marginOfPrice = []
+      res.data.data.pricing.map((test) => {
+        newMrpList.push({ mrp: test.mrp })
+        marginOfPrice.push({ mrp: test.mrp, transfer_rate: test.transfer_rate })
+        total += test.mrp
+        return total;
+      });
+      if (props.formDataRedux.payment) {
+        newMrpList = []
+        total = 0
+        props.formDataRedux.payment.price_entered.map((test) => {
+          newMrpList.push({ mrp: test.mrp })
+          total += test.mrp
+          return total;
+        })
+      }
+      setMrpList(newMrpList);
+      setPriceMargin(marginOfPrice)
+      setTestList(props.formDataRedux.test_info.selectedTests)
+      console.log(newMrpList);
+      setTotalMrp(total);
+    } else {
+      errorMessage("Error in Fetching Price")
+    }
+
+  }
+  console.log("TESTLIST && mrplist", testList, mrpList)
 
   const getTestList = () => {
     console.log("Inside GetTEstLIst")
@@ -66,6 +117,9 @@ const Payment = (props) => {
         setMrpList(mrpList);
         setTotalMrp(total);
 
+        // getMrpList()
+
+
       }
     }
   };
@@ -74,7 +128,8 @@ const Payment = (props) => {
   const setTotalPrice = (mrpList) => {
     let total = 0;
     mrpList.map((mrp) => {
-      total += mrp.mrp
+      console.log("mrpList", mrp)
+      total += parseInt(mrp.mrp)
     })
     console.log(total);
     setTotalMrp(total);
@@ -136,7 +191,9 @@ const Payment = (props) => {
     if (mrpError) {
       return
     }
-
+    if (showMrpError) {
+      return
+    }
 
     if (props.formValues.collectionLocation.location == "Home") {
       console.log("home location");
@@ -171,7 +228,7 @@ const Payment = (props) => {
 
     let isnum = /^\d+$/.test(e.target.value);
     if (!isnum) {
-      mrpList[e.target.name].mrp = testList[e.target.name].transfer_rate
+      mrpList[e.target.name].mrp = priceMargin[e.target.name].transfer_rate
       setMrpList(mrpList)
       setTotalPrice(mrpList)
     } else {
@@ -180,16 +237,21 @@ const Payment = (props) => {
     console.log(isnum, "INSUM REG")
     if (isnum) {
 
-      if (testList[e.target.name].transfer_rate <= e.target.value && e.target.value <= testList[e.target.name].mrp) {
+      if (priceMargin[e.target.name].transfer_rate <= e.target.value && e.target.value <= priceMargin[e.target.name].mrp) {
         mrpList[e.target.name].mrp = parseInt(e.target.value)
         setMrpList(mrpList)
         setTotalPrice(mrpList)
+        setShowMrpError(false)
         reRender({});
       } else {
-        if (testList[e.target.name].transfer_rate > e.target.value) {
-          mrpList[e.target.name].mrp = testList[e.target.name].transfer_rate
-        } else if (e.target.value > testList[e.target.name].mrp) {
-          mrpList[e.target.name].mrp = testList[e.target.name].mrp
+        if ((priceMargin[e.target.name].transfer_rate > e.target.value)) {
+          // mrpList[e.target.name].mrp = priceMargin[e.target.name].transfer_rate
+          setShowMrpError(true)
+        } else if (e.target.value > priceMargin[e.target.name].mrp) {
+          if (instituteType != 1) {
+            // mrpList[e.target.name].mrp = testList[e.target.name].mrp
+            setShowMrpError(true)
+          }
         }
         setMrpList(mrpList)
         setTotalPrice(mrpList)
@@ -201,7 +263,7 @@ const Payment = (props) => {
   const handleMrpChange = (e) => {
     console.log(e.target.value, "ISNUM");
 
-    if (testList[e.target.name].transfer_rate <= e.target.value && e.target.value <= testList[e.target.name].mrp) {
+    if (priceMargin[e.target.name].transfer_rate <= e.target.value && e.target.value <= priceMargin[e.target.name].mrp) {
       setMrpError(false)
     } else {
       setMrpError(true)
@@ -222,76 +284,81 @@ const Payment = (props) => {
   //   setConfirmationBy(e.target.value)
   // }
 
+  // && (testList.length > 0) && (mrpList.length > 0)
   return (
-    <>
-      <div className="customWrap">
-        <div className="row">
-          <div className="col-md-12 col-12">
-            <fieldset id="valdatinStep1">
-              <Formik
-                initialValues={{
-                  paysTo: (instituteType == 1) ? "Institute" : (instituteType == 2 || instituteType == 3 || instituteType == 4) && "Lab",
-                  confirmationBy: props.payment != 1 ? props.payment.confirmationBy : "",
-                  paymentMode: (instituteType == 2 || instituteType == 3) ? "Cash" : instituteType == 4 && ""
-                }}
-                validate={(values) => {
+    <>{(instituteType) &&
+      <>
+        <div className="customWrap">
+          <div className="row">
+            <div className="col-md-12 col-12">
+              <fieldset id="valdatinStep1">
+                <Formik
+                  innerRef={formikRef}
+                  initialValues={{
+                    paysTo: (instituteType == 1) ? "Institute" : "Lab",
+                    confirmationBy: props.payment != 1 ? props.payment.confirmationBy : "",
 
-                  const errors = {};
-                  if (props.fromSuperDtrf) {
+                    paymentMode: props.payment != 1 ? props.payment.paymentMode : (instituteType == 2 || instituteType == 3) ? "Cash" : instituteType == 4 ? instituteType == 4 : ""
+                  }}
+                  validate={(values) => {
 
-                  }
+                    const errors = {};
+                    if (props.fromSuperDtrf) {
 
-                  if (props.fromDtrfFront) {
-                    if (props.formValues.collectionLocation.location != "Home" && (!values.paysTo)) {
-                      // errors.paysTo = "Required";
                     }
-                    if (props.formValues.collectionLocation.location != "Home" && (!values.confirmationBy)) {
-                      errors.confirmationBy = "Required";
-                    }
-                    if (props.formValues.collectionLocation.location == "Home" && (!values.paidToInstitute)) {
-                      errors.paidToInstitute = "Required";
-                    }
-                    if (props.formValues.collectionLocation.location != "Home" && instituteType == 4 && (!values.paymentMode)) {
 
-                      errors.paymentMode = "Required";
+                    if (props.fromDtrfFront) {
+                      if (props.formValues.collectionLocation.location != "Home" && (!values.paysTo)) {
+                        // errors.paysTo = "Required";
+                      }
+                      if (props.formValues.collectionLocation.location != "Home" && (!values.confirmationBy)) {
+                        errors.confirmationBy = "Required";
+                      }
+                      if (props.formValues.collectionLocation.location == "Home" && (!values.paidToInstitute)) {
+                        errors.paidToInstitute = "Required";
+                      }
+                      if (props.formValues.collectionLocation.location != "Home" && instituteType == 4 && (!values.paymentMode)) {
+
+                        errors.paymentMode = "Required";
+                      }
+                      console.log(errors)
                     }
-                    console.log(errors)
-                  }
-                  return errors;
-                }}
-                onSubmit={(values, { setSubmitting }) => {
-                  console.log("Values", values)
-                  handleOnClickNext(values);
-                }}
-              >
-                {({ values }) => (
-                  <Form>
-                    <>
-                      {props.formValues.collectionLocation && props.formValues.collectionLocation.location != "Home" &&
+                    return errors;
+                  }}
+                  onSubmit={(values, { setSubmitting }) => {
+                    console.log("Values", values)
 
-                        <div className="form-group">
-                          {
-                            props.fromSuperDtrf && <>
-                              <div className="col-md-12 col-12 text-right">
-                                <div style={{ padding: "10px 0px" }}>
-                                  {!props.Token.isComplete &&
+                    handleOnClickNext(values);
+                  }}
+                >
+                  {({ values }) => (
+                    <Form>
+                      <>
+                        {props.formValues.collectionLocation && props.formValues.collectionLocation.location != "Home" &&
 
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleOnClickSaveAndExit(values)
-                                      }
-                                      className="btn btn-primary mr-2"
-                                    >
-                                      Save And Exit
-                                    </button>
-                                  }
+                          <div className="form-group">
+                            {
+                              props.fromSuperDtrf && <>
+                                <div className="col-md-12 col-12 text-right">
+                                  <div style={{ padding: "10px 0px" }}>
+                                    {!props.Token.isComplete &&
+
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleOnClickSaveAndExit(values)
+                                        }
+                                        className="btn btn-primary mr-2"
+                                      >
+                                        Save And Exit
+                                      </button>
+                                    }
+                                  </div>
                                 </div>
-                              </div>
 
-                            </>
-                          }
-                          {/* <div role="group" aria-labelledby="my-radio-group1">
+                              </>
+                            }
+                            {/* <div role="group" aria-labelledby="my-radio-group1">
                             <div className="section-title mb-4 mt-0">
                               Pay To <span className="marked">*</span>
                             </div>
@@ -325,231 +392,244 @@ const Payment = (props) => {
                             component="div"
                             className="formErr"
                           /> */}
-                        </div>
-                      }
-                      <div className="card p-3" style={{ 'boxShadow': 'none' }}>
-                        <div className="row">
-                          <div className="col-6">
-                            <div className="form-group mb-0">
-                              <label><b>Selected Tests</b></label>
-                            </div>
                           </div>
-                          <div className="col-6">
-                            <div className="form-group mb-0">
-                              <label><b>Price</b></label>
-                            </div>
-                          </div>
-                        </div>
-                        <hr className="mb-2 mt-0"></hr>
-                        {testList.map((test, id) => (
-                          <>
-                            <div className="row mb-1">
-                              <div className="col-6">
-                                <div className="form-group mb-0">
-                                  <label>{test.test_name}</label>
-                                </div>
-                              </div>
-                              <div className="col-6">
-                                <div className="form-group mb-0">
-                                  <input
-                                    type="text"
-                                    name={id}
-                                    className="form-control"
-                                    value={mrpList[id].mrp}
-                                    onBlur={handleMrpValidation}
-                                    onChange={handleMrpChange}
-                                  />
-                                </div>
+                        }
+                        <div className="card p-3" style={{ 'boxShadow': 'none' }}>
+                          <div className="row">
+                            <div className="col-6">
+                              <div className="form-group mb-0">
+                                <label><b>Selected Tests</b></label>
                               </div>
                             </div>
-                          </>
-                        ))}
-                        <hr className="mb-1 mt-1"></hr>
-                        <div className="row">
-                          <div className="col-6">
-                            <div className="section-title mb-0 mt-0">
-                              <label><b>Total</b></label>
+                            <div className="col-6">
+                              <div className="form-group mb-0">
+                                <label><b>Price</b></label>
+                              </div>
                             </div>
                           </div>
-                          <div className="col-6">
-                            <div className="section-title mb-0 mt-0">
-                              <label><i className="fas fa-rupee-sign" style={{ 'fontSize': '16px' }}></i> <b>{totalMrp}</b></label>
+                          <hr className="mb-2 mt-0"></hr>
+                          {testList.map((test, id) => (
+                            <>
+                              <div className="row mb-1">
+                                <div className="col-6">
+                                  <div className="form-group mb-0">
+                                    <label>{test.display_test_name}</label>
+                                  </div>
+                                </div>
+                                {
+                                  mrpList.length > 0 && <>
+
+
+                                    <div className="col-6">
+                                      <div className="form-group mb-0">
+                                        <input
+                                          type="text"
+                                          name={id}
+                                          className="form-control"
+                                          value={mrpList[id].mrp}
+                                          onBlur={handleMrpValidation}
+                                          onChange={handleMrpChange}
+                                        />
+                                      </div>
+                                      {showMrpError &&
+
+                                        <div className="formErr">
+                                          Invalid Amount
+                                        </div>
+                                      }
+                                    </div>
+                                  </>
+                                }
+                              </div>
+                            </>
+                          ))}
+                          <hr className="mb-1 mt-3"></hr>
+                          <div className="row">
+                            <div className="col-6">
+                              <div className="section-title mb-0 mt-0">
+                                <label><b>Total</b></label>
+                              </div>
+                            </div>
+                            <div className="col-6">
+                              <div className="section-title mb-0 mt-0">
+                                <label><i className="fas fa-rupee-sign" style={{ 'fontSize': '16px' }}></i> <b>{totalMrp}</b></label>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                      {/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ IF Selected Lab ask for Payment mode~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  */}
-                      {
-                        instituteType == 4 &&
-                        <div className="form-group mt-2">
-                          <div role="group" aria-labelledby="my-radio-group1">
-                            <label className="mb-3">Payment Type</label>
+                        {/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ IF Selected Lab ask for Payment mode~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  */}
+                        {
+                          instituteType == 4 &&
+                          <div className="form-group mt-2">
+                            <div role="group" aria-labelledby="my-radio-group1">
+                              <label className="mb-3">Payment Type</label>
+                              <br />
+                              <div className="pretty p-default p-round">
+                                <Field
+                                  type="radio"
+                                  name="paymentMode"
+                                  value="Cash"
+                                // onClick={e => handleOnClickPaymentMode(e)}
+
+                                />
+                                <div className="state">
+                                  <label>Cash</label>
+                                </div>
+                              </div>
+                              <div className="pretty p-default p-round">
+                                <Field
+                                  type="radio"
+                                  name="paymentMode"
+                                  value="Digital"
+                                // onClick={e => handleOnClickPaymentMode(e)}
+
+                                />
+                                <div className="state">
+                                  <label>Digital</label>
+                                </div>
+                              </div>
+                              <ErrorMessage
+                                name="paymentMode"
+                                component="div"
+                                className="formErr"
+                              />
+                            </div>
+                          </div>
+                        }
+                        {/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Close~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */}
+                        {props.formValues.collectionLocation && props.formValues.collectionLocation.location != "Home" &&
+                          <div className="form-group mt-2">
+
+                            <label className="mb-3">Confirmation by: </label>
                             <br />
+
                             <div className="pretty p-default p-round">
                               <Field
                                 type="radio"
-                                name="paymentMode"
-                                value="Cash"
-                              // onClick={e => handleOnClickPaymentMode(e)}
-
+                                name="confirmationBy"
+                                value="Staff"
+                              // checked={confirmationBy == "Staff"}
+                              // onChange={handleConfirmationByChange}
                               />
                               <div className="state">
-                                <label>Cash</label>
+                                <label>Staff</label>
                               </div>
                             </div>
+
                             <div className="pretty p-default p-round">
                               <Field
-                                type="radio"
-                                name="paymentMode"
-                                value="Digital"
-                              // onClick={e => handleOnClickPaymentMode(e)}
 
+                                type="radio"
+                                name="confirmationBy"
+                                value="Patient"
+                              // checked={confirmationBy == "Patient"}
+                              // onChange={handleConfirmationByChange}
                               />
                               <div className="state">
-                                <label>Digital</label>
+                                <label>Patient</label>
                               </div>
                             </div>
                             <ErrorMessage
-                              name="paymentMode"
+                              name="confirmationBy"
                               component="div"
                               className="formErr"
                             />
                           </div>
-                        </div>
-                      }
-                      {/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Close~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */}
-                      {props.formValues.collectionLocation && props.formValues.collectionLocation.location != "Home" &&
-                        <div className="form-group mt-2">
+                        }
 
-                          <label className="mb-3">Confirmation by: </label>
-                          <br />
-
-                          <div className="pretty p-default p-round">
-                            <Field
-                              type="radio"
-                              name="confirmationBy"
-                              value="Staff"
-                            // checked={confirmationBy == "Staff"}
-                            // onChange={handleConfirmationByChange}
-                            />
-                            <div className="state">
-                              <label>Staff</label>
+                        {props.formValues.collectionLocation && props.formValues.collectionLocation.location == "Home" &&
+                          <div className="form-group mt-2">
+                            <label className="mb-3">Paid to Institute: </label>
+                            <br />
+                            <div className="pretty p-default p-round">
+                              <Field
+                                type="radio"
+                                name="paidToInstitute"
+                                value="Yes"
+                              // checked={confirmationBy == "Staff"}
+                              // onChange={handleConfirmationByChange}
+                              />
+                              <div className="state">
+                                <label>Yes</label>
+                              </div>
                             </div>
-                          </div>
 
-                          <div className="pretty p-default p-round">
-                            <Field
-
-                              type="radio"
-                              name="confirmationBy"
-                              value="Patient"
-                            // checked={confirmationBy == "Patient"}
-                            // onChange={handleConfirmationByChange}
-                            />
-                            <div className="state">
-                              <label>Patient</label>
+                            <div className="pretty p-default p-round">
+                              <Field
+                                type="radio"
+                                name="paidToInstitute"
+                                value="No"
+                              // checked={confirmationBy == "Patient"}
+                              // onChange={handleConfirmationByChange}
+                              />
+                              <div className="state">
+                                <label>No</label>
+                              </div>
                             </div>
-                          </div>
-                          <ErrorMessage
-                            name="confirmationBy"
-                            component="div"
-                            className="formErr"
-                          />
-                        </div>
-                      }
-
-                      {props.formValues.collectionLocation && props.formValues.collectionLocation.location == "Home" &&
-                        <div className="form-group mt-2">
-                          <label className="mb-3">Paid to Institute: </label>
-                          <br />
-                          <div className="pretty p-default p-round">
-                            <Field
-                              type="radio"
+                            <ErrorMessage
                               name="paidToInstitute"
-                              value="Yes"
-                            // checked={confirmationBy == "Staff"}
-                            // onChange={handleConfirmationByChange}
+                              component="div"
+                              className="formErr"
                             />
-                            <div className="state">
-                              <label>Yes</label>
-                            </div>
                           </div>
+                        }
 
-                          <div className="pretty p-default p-round">
-                            <Field
-                              type="radio"
-                              name="paidToInstitute"
-                              value="No"
-                            // checked={confirmationBy == "Patient"}
-                            // onChange={handleConfirmationByChange}
-                            />
-                            <div className="state">
-                              <label>No</label>
+                        <div className="row" id="action1">
+                          {props.fromSuperDtrf &&
+
+                            <div className="col-md-2 col-2 text-left">
+                              <div style={{ padding: "5px 20px" }}>
+                                <button
+                                  onClick={e => Router.push("/super-dtrf")}
+                                  className="btn btn-primary"
+                                >
+                                  Exit
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                          <ErrorMessage
-                            name="paidToInstitute"
-                            component="div"
-                            className="formErr"
-                          />
-                        </div>
-                      }
-
-                      <div className="row" id="action1">
-                        {props.fromSuperDtrf &&
-
-                          <div className="col-md-2 col-2 text-left">
+                          }
+                          <div className={props.fromSuperDtrf ? "col-md-10 col-10 text-right" : "col-md-12 col-12 text-right"}>
                             <div style={{ padding: "5px 20px" }}>
                               <button
-                                onClick={e => Router.push("/super-dtrf")}
-                                className="btn btn-primary"
+                                onClick={handleOnClickPrevious}
+                                className="btn btn-primary mr-2"
+                                type="button"
                               >
-                                Exit
+                                Previous
+                              </button>
+                              {props.fromSuperDtrf && <>
+
+                                {!props.Token.isComplete &&
+
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleOnClickSave(values)
+                                    }
+                                    className="btn btn-primary mr-2"
+                                  >
+                                    Save
+                                  </button>
+                                }
+                              </>
+                              }
+                              <button type="submit" className="btn btn-primary" disabled={props.formDataRedux.collectionLocation ? (props.formDataRedux.collectionLocation.location == "Institute" ? false : true) : false}>
+                                Next
                               </button>
                             </div>
                           </div>
-                        }
-                        <div className={props.fromSuperDtrf ? "col-md-10 col-10 text-right" : "col-md-12 col-12 text-right"}>
-                          <div style={{ padding: "5px 20px" }}>
-                            <button
-                              onClick={handleOnClickPrevious}
-                              className="btn btn-primary mr-2"
-                              type="button"
-                            >
-                              Previous
-                            </button>
-                            {props.fromSuperDtrf && <>
-
-                              {!props.Token.isComplete &&
-
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    handleOnClickSave(values)
-                                  }
-                                  className="btn btn-primary mr-2"
-                                >
-                                  Save
-                                </button>
-                              }
-                            </>
-                            }
-                            <button type="submit" className="btn btn-primary" disabled={props.formDataRedux.collectionLocation ? (props.formDataRedux.collectionLocation.location == "Institute" ? false : true) : false}>
-                              Next
-                            </button>
-                          </div>
                         </div>
-                      </div>
 
-                    </>
-                  </Form>
-                )}
-              </Formik>
-            </fieldset>
+                      </>
+                    </Form>
+                  )}
+                </Formik>
+              </fieldset>
+            </div>
           </div>
         </div>
-      </div>
-    </>
+      </>
+    }                     </>
   );
 };
 

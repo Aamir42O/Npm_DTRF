@@ -39,6 +39,7 @@ const ChooseCollectionLocation = props => {
   const [homeChecked, setHomeChecked] = (0, _react.useState)(false);
   const [, reRender] = (0, _react.useState)();
   const childRef = (0, _react.useRef)();
+  const formRef = (0, _react.useRef)();
   (0, _react.useEffect)(() => {
     console.log(props);
 
@@ -58,7 +59,6 @@ const ChooseCollectionLocation = props => {
     data.dtrf.collectionLocation = values;
     formData.append("dtrf_id", JSON.stringify(data.dtrf_id));
     formData.append("dtrf", JSON.stringify(data.dtrf));
-    console.log("INCOMEPLETE FORMDATA SEND", response);
     const response = await props.handleOnClickSave(_objectSpread(_objectSpread({}, props.formDataRedux), {}, {
       collectionLocation: values
     }));
@@ -143,6 +143,7 @@ const ChooseCollectionLocation = props => {
     initialValues: {
       location: props.formDataRedux.collectionLocation ? props.formDataRedux.collectionLocation.location : ""
     },
+    innerRef: formRef,
     validate: values => {
       const errors = {};
 

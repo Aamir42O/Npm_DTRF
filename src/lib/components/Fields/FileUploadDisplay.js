@@ -4,7 +4,6 @@ import CancelOutlinedIcon from '@material-ui/icons/CancelOutlined';
 
 const FileUploadDisplay = React.forwardRef((props, ref) => {
 
-    console.log(props)
     return <>
         <div className="col-12 col-md-12 form-group">
             <div className="row mt-1">

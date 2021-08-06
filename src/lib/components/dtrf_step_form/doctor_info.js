@@ -11,6 +11,7 @@ import reqWithToken from "../../helper/Auth";
 import AsyncSelect from "react-select/async";
 import { setFormData } from "../../actions/formData";
 import { clearFiles } from "../../actions/fileupload";
+import Cookies from "js-cookie"
 
 const axios = require("axios");
 
@@ -127,6 +128,7 @@ const DoctorInfo = (props) => {
       setPrefilledDoctorName(null)
     }
     if (e) {
+      setShowDoctorErrorMessage(false)
       if (props.formDataRedux.test_info) {
         const data = props.formDataRedux.test_info
         delete data.test_info
@@ -196,12 +198,14 @@ const DoctorInfo = (props) => {
     }
   }
   const handleDoctorLoadOption = async (doctor) => {
-
     if (doctor.length > 2) {
       console.log("INSIDE", process.env.NEXT_PUBLIC_ALL_DOCTORS)
       let url = `${process.env.NEXT_PUBLIC_ALL_DOCTORS}?searchquery=${doctor}`
+      if (props.fromSuperDtrf) {
+        url = `${process.env.NEXT_PUBLIC_ALL_DOCTORS}?searchquery=${doctor}&institute=${props.formDataRedux.institute_info.instituteName.lilac_id}`
+      }
       console.log("INSIDE condition", url)
-      const resp = await reqWithToken(url, "GET")
+      const resp = await reqWithToken(url, "GET", null, { superDtrf: props.fromSuperDtrf, dtrfFront: props.fromDtrfFront })
       console.log(resp)
       return resp.data.data.doctorSearchList
     }
@@ -214,7 +218,7 @@ const DoctorInfo = (props) => {
       console.log("INSIDE", process.env.NEXT_PUBLIC_ALL_REFERRAL_DOCTORS)
       let url = `${process.env.NEXT_PUBLIC_ALL_REFERRAL_DOCTORS}?searchquery=${doctor}`
       console.log("INSIDE condition", url)
-      const resp = await reqWithToken(url, "GET")
+      const resp = await reqWithToken(url, "GET", null, { superDtrf: props.fromSuperDtrf, dtrfFront: props.fromDtrfFront })
       console.log(resp)
       return resp.data.data.doctorSearchList
     }
@@ -315,6 +319,7 @@ const DoctorInfo = (props) => {
                       Doctor: <span className="marked">*</span>
                     </label>
                     <AsyncSelect
+                      isDisabled={props.fromSuperDtrf ? (Cookies.get("roleAL") == "bdm" ? true : false) : false}
                       isClearable
                       cacheOptions
                       defaultOptions

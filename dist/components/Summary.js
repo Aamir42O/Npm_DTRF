@@ -179,7 +179,7 @@ const Summary = props => {
     class: "section-title mb-2 mt-0"
   }, "Test Information:"), /*#__PURE__*/_react.default.createElement("div", {
     className: "form-group mb-0"
-  }, test_info && test_info.selectedTests.map((test, id) => /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("label", null, /*#__PURE__*/_react.default.createElement("b", null, test.test_name)), /*#__PURE__*/_react.default.createElement("br", null), /*#__PURE__*/_react.default.createElement("label", null, "Sample Type:\xA0 "), /*#__PURE__*/_react.default.createElement("label", null, test.sampleType), /*#__PURE__*/_react.default.createElement("hr", null)))), /*#__PURE__*/_react.default.createElement("div", {
+  }, test_info && test_info.selectedTests.map((test, id) => /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("label", null, /*#__PURE__*/_react.default.createElement("b", null, test.display_test_name)), /*#__PURE__*/_react.default.createElement("br", null), /*#__PURE__*/_react.default.createElement("label", null, "Sample Type:\xA0 "), /*#__PURE__*/_react.default.createElement("label", null, test.sampleType), /*#__PURE__*/_react.default.createElement("hr", null)))), /*#__PURE__*/_react.default.createElement("div", {
     class: "section-title mb-0 mt-0"
   }, "Collection Location: \xA0", collectionLocation && (collectionLocation.location == "Home" ? "Non-Institute" : collectionLocation.location)))), from == "Dashboard" && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
     className: "card p-3",
@@ -190,7 +190,7 @@ const Summary = props => {
     class: "section-title mb-2 mt-0"
   }, "Test Information:"), /*#__PURE__*/_react.default.createElement("div", {
     className: "form-group mb-0"
-  }, /*#__PURE__*/_react.default.createElement("label", null, /*#__PURE__*/_react.default.createElement("b", null, test_info.test_name)), /*#__PURE__*/_react.default.createElement("br", null), /*#__PURE__*/_react.default.createElement("label", null, "Sample Type:\xA0 "), /*#__PURE__*/_react.default.createElement("label", null, test_info.sampleType), /*#__PURE__*/_react.default.createElement("hr", null)), /*#__PURE__*/_react.default.createElement("div", {
+  }, /*#__PURE__*/_react.default.createElement("label", null, /*#__PURE__*/_react.default.createElement("b", null, test_info.display_test_name)), /*#__PURE__*/_react.default.createElement("br", null), /*#__PURE__*/_react.default.createElement("label", null, "Sample Type:\xA0 "), /*#__PURE__*/_react.default.createElement("label", null, test_info.sampleType), /*#__PURE__*/_react.default.createElement("hr", null)), /*#__PURE__*/_react.default.createElement("div", {
     class: "section-title mb-0 mt-0"
   }, "Collection Location: \xA0", collectionLocation && (collectionLocation.location == "Home" ? "Non-Institute" : collectionLocation.location)))), /*#__PURE__*/_react.default.createElement("div", {
     className: "card p-3",
@@ -209,13 +209,19 @@ const Summary = props => {
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Salutation",
     data: patient_details.salutation
-  }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
+  }), hasNbs && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
+    className: "col-md-2 col-12"
+  }, /*#__PURE__*/_react.default.createElement("div", {
+    className: "form-group mb-0"
+  }, (patient_details.hasBabyName || typeof patient_details.hasBabyName == "boolean") && /*#__PURE__*/_react.default.createElement("label", {
+    className: "col-form-label col-sm text-sm-right"
+  }, /*#__PURE__*/_react.default.createElement("b", null, patient_details.hasBabyName.toString() == "true" ? "Baby's" : "B/O"))))), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "First Name",
-    data: (hasNbs ? patient_details.hasBabyName == "true" ? "Baby " : "B/O " : "") + patient_details.name ? patient_details.name.firstName ? patient_details.name.firstName : patient_details.firstName : patient_details.firstName,
+    data: patient_details.name ? patient_details.name.firstName ? patient_details.name.firstName : patient_details.firstName : patient_details.firstName,
     className: hasNbs ? "col-md-5 col-12" : "col-md-6 col-12"
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Last Name",
-    data: (hasNbs ? patient_details.hasBabyName == "true" ? "Baby " : "B/O " : "") + patient_details.name ? patient_details.name.lastName ? patient_details.name.lastName : patient_details.lastName : patient_details.lastName,
+    data: patient_details.name ? patient_details.name.lastName ? patient_details.name.lastName : patient_details.lastName : patient_details.lastName,
     className: hasNbs ? "col-md-5 col-12" : "col-md-6 col-12"
   }))), /*#__PURE__*/_react.default.createElement("div", {
     className: "row"
@@ -228,9 +234,9 @@ const Summary = props => {
     title: "Husband's/Father Name",
     data: patient_details.husbandsOrFathersName
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
-    title: "Gender",
+    title: "Sex assigned at Birth",
     data: patient_details.gender == "male" ? "Male" : patient_details.gender == "female" ? "Female" : "Other"
-  })), patient_details.ageType == "YMD" && /*#__PURE__*/_react.default.createElement("div", {
+  })), patient_details.ageType == "ageInYMD" && /*#__PURE__*/_react.default.createElement("div", {
     className: "row"
   }, /*#__PURE__*/_react.default.createElement("div", {
     className: "col-sm"
@@ -255,7 +261,8 @@ const Summary = props => {
   }, patient_details.ageType == "dob" && /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Date of Birth",
     data: patient_details.dateOfBirth,
-    className: "col-sm"
+    className: "col-sm",
+    isDate: true
   }), /*#__PURE__*/_react.default.createElement("div", {
     className: "col-md-6 col-12"
   }, /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
@@ -264,7 +271,7 @@ const Summary = props => {
     className: "col-sm"
   }))), hasNbs && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
     className: "row"
-  }, /*#__PURE__*/_react.default.createElement("div", {
+  }, patient_details.mothersFirstName && /*#__PURE__*/_react.default.createElement("div", {
     className: "col-md-2 col-12"
   }, /*#__PURE__*/_react.default.createElement("div", {
     className: "form-group mb-0"
@@ -274,12 +281,37 @@ const Summary = props => {
     className: "col-md-5 col-12"
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Last Name",
-    data: from == "Confirmation" ? patient_details.mothersLasttName : patient_details.mothersName.lastName,
+    data: from == "Confirmation" ? patient_details.mothersLastName : patient_details.mothersName.lastName,
     className: "col-md-5 col-12"
+  })), patient_details.mothersAgeType == "ageInYMD" ? /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
+    className: "row"
+  }, /*#__PURE__*/_react.default.createElement("div", {
+    className: "col-sm"
+  }, /*#__PURE__*/_react.default.createElement("div", {
+    className: "form-group mb-0"
+  }, /*#__PURE__*/_react.default.createElement("label", {
+    className: "col-form-label col-sm-6 text-sm-right"
+  }, /*#__PURE__*/_react.default.createElement("b", null, "Mothers Age:")))), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
+    title: "Years",
+    data: patient_details.mothersAgeInYears,
+    className: "col-sm"
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
+    title: "Months",
+    data: patient_details.mothersAgeInMonths,
+    className: "col-sm"
+  }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
+    title: "Days",
+    data: patient_details.mothersAgeInDays,
+    className: "col-sm"
+  })), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Mothers DOB:",
-    data: patient_details.mothersDateOfBirth
-  })), /*#__PURE__*/_react.default.createElement("div", {
+    data: patient_details.mothersDateOfBirth,
+    isDate: true
+  })) : /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
+    title: "Mothers DOB:",
+    data: patient_details.mothersDateOfBirth,
+    isDate: true
+  }), /*#__PURE__*/_react.default.createElement("div", {
     className: "row"
   }, /*#__PURE__*/_react.default.createElement("div", {
     className: "col-md-2 col-12"
@@ -307,10 +339,10 @@ const Summary = props => {
     className: "row"
   }, /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "City",
-    data: patient_details.city.label ? patient_details.city.label : patient_details.city
+    data: typeof patient_details.city == "object" ? patient_details.city.label : patient_details.city
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "State",
-    data: patient_details.state.label ? patient_details.state.label : patient_details.state
+    data: typeof patient_details.state == "object" ? patient_details.state.label : patient_details.state
   })), (hasNipt || hasPns) && /*#__PURE__*/_react.default.createElement("div", {
     className: "row"
   }, /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
@@ -327,7 +359,7 @@ const Summary = props => {
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Folic Acid Intake:",
     data: patient_details.folicAcidIntake == "true" ? "Yes" : "No"
-  }))))), patient_details.filledBy == "patient" && from == "Confirmation" && /*#__PURE__*/_react.default.createElement("div", {
+  }))))), patient_details && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, patient_details.filledBy == "patient" && from == "Confirmation" && !props.sendByLink && /*#__PURE__*/_react.default.createElement("div", {
     className: "row",
     id: "action1"
   }, /*#__PURE__*/_react.default.createElement("div", {
@@ -340,7 +372,7 @@ const Summary = props => {
     type: "button",
     onClick: e => props.onResendClick(),
     className: "btn btn-primary"
-  }, "Resend Link"))))), collectionLocation.location == "Institute" && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
+  }, "Resend Link")))))), collectionLocation.location == "Institute" && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
     className: "card p-3",
     style: {
       'box-shadow': 'none'
@@ -351,10 +383,12 @@ const Summary = props => {
     className: "row"
   }, /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Sample Collection Date",
-    data: medical_info.sampleCollectionDate
+    data: medical_info.sampleCollectionDate,
+    isDate: true
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "First Feeding Date",
-    data: medical_info.firstFeedingDate
+    data: medical_info.firstFeedingDate,
+    isDate: true
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Type of Feeding",
     data: medical_info.typeOfFeeding
@@ -363,7 +397,8 @@ const Summary = props => {
     data: medical_info.hoTransfusion
   }), medical_info.hoTransfusion == "Yes" && /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "H/O Transfusion Date",
-    data: medical_info.dateOfHoTransfusion
+    data: medical_info.dateOfHoTransfusion,
+    isDate: true
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Delivery Status",
     data: medical_info.deliveryStatus
@@ -371,8 +406,9 @@ const Summary = props => {
     title: "Additional Symptoms / History",
     data: medical_info.additionalSymptoms
   }))), !hasNbs && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
-    title: "Scan Date",
-    data: medical_info.usgDate
+    title: "USG Date",
+    data: medical_info.usgDate,
+    isDate: true
   }), /*#__PURE__*/_react.default.createElement("div", {
     class: "section-title mb-2 mt-0"
   }, "Gestational Age :")), /*#__PURE__*/_react.default.createElement("div", {
@@ -385,7 +421,8 @@ const Summary = props => {
     data: medical_info.gestationalAgeDays
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Sample Collection Date",
-    data: medical_info.sampleCollectionDate
+    data: medical_info.sampleCollectionDate,
+    isDate: true
   }), from == "Confirmation" && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
     className: "col-md-12 col-12"
   }, /*#__PURE__*/_react.default.createElement("h6", {
@@ -471,16 +508,16 @@ const Summary = props => {
   })), medical_info.presentPregnancy == "Twins" && medical_info.twinType == "Monochorionic" && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Monochorionic Type",
     data: medical_info.monochorionicType
-  })), medical_info.Gravida && /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
+  })), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Gravida",
     data: medical_info.Gravida
-  }), medical_info.Para && /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
+  }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Para",
     data: medical_info.Para
-  }), medical_info.Abortion && /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
+  }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Abortion",
     data: medical_info.Abortion
-  }), medical_info.Live && /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
+  }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Live",
     data: medical_info.Live
   })), !hasCyto && medical_info.referralReason && medical_info.referralReason.length > 0 && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, medical_info.referralReason.map((reason, index) => {
@@ -516,7 +553,8 @@ const Summary = props => {
     className: "foem-group mb-0"
   }, "Sex Chromosome Aneuploidies will not be reported for twin cases")), medical_info.presentPregnancy == "Vanishing Twin" && /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Date on which the other twin had vanished/ reduced",
-    data: medical_info.dateOfTwinVanishOrReduced
+    data: medical_info.dateOfTwinVanishOrReduced,
+    isDate: true
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "IVF Pregnancy",
     data: medical_info.ivfPregnancy
@@ -534,7 +572,8 @@ const Summary = props => {
     data: medical_info.previousPregnancy
   }), medical_info.previousPregnancy == "Yes" && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Previous pregnancy Date",
-    data: medical_info.prevPregDate
+    data: medical_info.prevPregDate,
+    isDate: true
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Spontaneous Abortion",
     data: medical_info.spontaneousAbortion
@@ -563,14 +602,16 @@ const Summary = props => {
     title: "Other Referral Reason",
     data: medical_info.otherReferralReason
   })) : "")), hasPns && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
-    title: "FMF Id",
+    title: "FMF ID",
     data: medical_info.fmfId
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "LMP",
-    data: medical_info.lmpDate
+    data: medical_info.lmpDate,
+    isDate: true
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "USG/Corr EDD",
-    data: medical_info.usgCorrEddDate
+    data: medical_info.usgCorrEddDate,
+    isDate: true
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "LMP Certainity",
     data: medical_info.lmpCertainity
@@ -606,7 +647,8 @@ const Summary = props => {
     data: medical_info.patientOnHcg
   }), medical_info.patientOnHcg == "Yes" && /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Last date of HCG intake",
-    data: medical_info.hcgIntakeDate
+    data: medical_info.hcgIntakeDate,
+    isDate: true
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Bleeding/Spotting in last two weeks",
     data: medical_info.bleedingOrSpottingTwoWeeks
@@ -618,14 +660,16 @@ const Summary = props => {
     data: medical_info.typeOfProcedure
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Extraction date",
-    data: medical_info.extractionDate
+    data: medical_info.extractionDate,
+    isDate: true
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Transfer date",
-    data: medical_info.transferDate
+    data: medical_info.transferDate,
+    isDate: true
   }), medical_info.typeOfProcedure == "Donor" && /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Donor DOB",
     data: medical_info.donorDob
-  })), testTrimester == "First" && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
+  })), testTrimester == "First" && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, medical_info.presentPregnancy != "Twins" && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "CRL (in mm)",
     data: medical_info.crl
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
@@ -634,7 +678,7 @@ const Summary = props => {
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "NB",
     data: medical_info.nb
-  })), medical_info.presentPregnancy == "Twins" && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
+  }))), medical_info.presentPregnancy == "Twins" && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Twin-1: CRL (in mm)",
     data: medical_info.twinCrl1
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
@@ -654,7 +698,8 @@ const Summary = props => {
     data: medical_info.twinNb2
   })), hasPreEclampsiaTest && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, medical_info.bpOrMap == "BP" && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "BP Measurement Date",
-    data: medical_info.bpMeasurementDate
+    data: medical_info.bpMeasurementDate,
+    isDate: true
   }), /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "BP Left Arm - Systolic Reading 1",
     data: medical_info.bpLeftSystolic1
@@ -708,7 +753,8 @@ const Summary = props => {
     data: medical_info.hc
   }), medical_info.dateOfScan && /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Date of Scan",
-    data: medical_info.dateOfScan
+    data: medical_info.dateOfScan,
+    isDate: true
   }), medical_info.crl && /*#__PURE__*/_react.default.createElement(_DisplayField.default, {
     title: "Crl",
     data: medical_info.crl
@@ -716,58 +762,33 @@ const Summary = props => {
     for: "Confirmation",
     files: props.fileUpload.files,
     filesUploaded: props.filesUploaded
-  })), from == "Dashboard" && !hasNbs && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_DisplayFiles.default, {
+  })), from == "Dashboard" && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_DisplayFiles.default, {
     for: "Dashboard",
     files: props.files,
     filesUploaded: props.filesUploaded
-  }), medical_info.pcpndtScans && /*#__PURE__*/_react.default.createElement("div", {
-    className: "col-10 col-md-8 form-group"
-  }, medical_info.pcpndtScans && /*#__PURE__*/_react.default.createElement("div", {
-    className: "section-title mb-1   mt-4 col-12"
-  }, "PCPNDT SCAN"), medical_info.pcpndtScans.map((name, container_id) => /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
-    className: "row mb-1"
-  }, /*#__PURE__*/_react.default.createElement("div", {
-    className: "col-10"
-  }, /*#__PURE__*/_react.default.createElement("a", {
-    href: name.location
-  }, /*#__PURE__*/_react.default.createElement("div", {
-    className: "form-control mb-0"
-  }, /*#__PURE__*/_react.default.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    width: "24",
-    height: "24",
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    "stroke-width": "2",
-    "stroke-linecap": "round",
-    "stroke-linejoin": "round",
-    class: "feather feather-file"
-  }, /*#__PURE__*/_react.default.createElement("path", {
-    d: "M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"
-  }), /*#__PURE__*/_react.default.createElement("polyline", {
-    points: "13 2 13 9 20 9"
-  })), /*#__PURE__*/_react.default.createElement("label", {
-    className: "ml-2",
-    style: {
-      fontSize: "12px"
-    }
-  }, name.originalname))))))))))), from == "Confirmation" && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
+  }), /*#__PURE__*/_react.default.createElement(_DisplayFiles.default, {
+    for: "Dashboard",
+    files: props.reports,
+    filesUploaded: [{
+      variable: "reports",
+      display: "Reports"
+    }]
+  })))), from == "Confirmation" && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
     className: "card p-3",
     style: {
       'box-shadow': 'none'
     }
   }, /*#__PURE__*/_react.default.createElement("div", {
     class: "section-title mb-1 mt-0"
-  }, "Sample Info:"), test_info.selectedTests.map((test, id) => /*#__PURE__*/_react.default.createElement("div", {
-    className: "row mb-2"
-  }, /*#__PURE__*/_react.default.createElement("div", {
+  }, "Sample Info:"), test_info.selectedTests.map((test, id) => /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
     className: "col-12 col-md-6"
   }, /*#__PURE__*/_react.default.createElement("div", {
     className: "form-group mb-0"
   }, /*#__PURE__*/_react.default.createElement("label", {
     className: "col-form-label col-sm-6"
-  }, /*#__PURE__*/_react.default.createElement("b", null, test.test_name)))), /*#__PURE__*/_react.default.createElement("div", {
+  }, /*#__PURE__*/_react.default.createElement("b", null, "Test name : ", test.test_name)))), /*#__PURE__*/_react.default.createElement("div", {
+    className: "row mb-2"
+  }, /*#__PURE__*/_react.default.createElement("div", {
     className: "col-12 col-md-6"
   }, sample_info.sampleContainerList[id].containers.map((test, container_id) => /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
     className: "row mb-1"
@@ -780,7 +801,11 @@ const Summary = props => {
     style: {
       height: "auto"
     }
-  }, "Sample Container Type: ", test.type), /*#__PURE__*/_react.default.createElement("label", {
+  }, "Sample Container ID: ", test.id))), /*#__PURE__*/_react.default.createElement("div", {
+    className: "col-6"
+  }, /*#__PURE__*/_react.default.createElement("div", {
+    className: "form-group mb-0"
+  }, /*#__PURE__*/_react.default.createElement("label", {
     className: "form-control",
     style: {
       height: "auto"
@@ -802,16 +827,20 @@ const Summary = props => {
     title: "State",
     data: sample_info.collectionLocation[id].location.state && sample_info.collectionLocation[id].location.state.value
   }))) : /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
+    className: "col-6"
+  }, /*#__PURE__*/_react.default.createElement("div", {
     className: "form-group mb-0"
   }, /*#__PURE__*/_react.default.createElement("label", {
     className: "col-form-label col-sm-6 text-sm-right"
   }, /*#__PURE__*/_react.default.createElement("b", null, "Location")), /*#__PURE__*/_react.default.createElement("label", {
     className: "col-form-label col-sm-6"
-  }, "Institute Location"))), /*#__PURE__*/_react.default.createElement("div", {
+  }, "Institute Location")))), /*#__PURE__*/_react.default.createElement("div", {
     className: "col-12 col-md-12"
   }, sample_info.pcpndtList && /*#__PURE__*/_react.default.createElement("div", {
     className: "section-title mb-1 mt-4 col-12"
-  }, "PCPNDT SCAN"), sample_info.pcpndtList[id].scans.map((name, container_id) => /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
+  }, "PCPNDT SCAN"), /*#__PURE__*/_react.default.createElement("div", {
+    className: "col-6"
+  }, sample_info.pcpndtList[id].scans.map((name, container_id) => /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
     className: "row mb-1"
   }, /*#__PURE__*/_react.default.createElement("div", {
     className: "col-10"
@@ -839,7 +868,7 @@ const Summary = props => {
     style: {
       fontSize: "12px"
     }
-  }, name.name ? name.name : name.originalname ? name.originalname : name.displayName))))))))))))), from == "Dashboard" && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
+  }, name.name ? name.name : name.originalname ? name.originalname : name.displayName))))))))))))))), from == "Dashboard" && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
     className: "card p-3",
     style: {
       'box-shadow': 'none'
@@ -849,35 +878,35 @@ const Summary = props => {
   }, "Test Information:"), /*#__PURE__*/_react.default.createElement("div", {
     className: "row mb-2"
   }, /*#__PURE__*/_react.default.createElement("div", {
-    className: "col-12 col-md-6"
+    className: "col-12 col-md-12"
   }, /*#__PURE__*/_react.default.createElement("div", {
     className: "form-group mb-0"
   }, /*#__PURE__*/_react.default.createElement("label", {
     className: "col-form-label col-sm-6"
-  }, /*#__PURE__*/_react.default.createElement("b", null, test_info.test_name)))), /*#__PURE__*/_react.default.createElement("div", {
-    className: "col-12 col-md-6"
-  }, sample_info.samples.map((sample, index) => /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
-    className: "row"
+  }, /*#__PURE__*/_react.default.createElement("b", null, test_info.test_name)))), sample_info.samples.map((sample, index) => /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
+    className: "row mt-2 ml-2"
+  }, /*#__PURE__*/_react.default.createElement("div", {
+    className: "row ml-2"
   }, /*#__PURE__*/_react.default.createElement("div", {
     class: "section-title mb-1 mt-0"
   }, "Sample ", index + 1)), /*#__PURE__*/_react.default.createElement("div", {
-    className: "row mb-1"
+    className: "row mb-1 ml-1 mr-1"
   }, /*#__PURE__*/_react.default.createElement("div", {
     className: "col-6"
-  }, /*#__PURE__*/_react.default.createElement("div", {
-    className: "form-group mb-0"
   }, /*#__PURE__*/_react.default.createElement("label", {
     className: "form-control",
     style: {
       height: "auto"
     }
-  }, "Sample  Type: ", sample.sample_type), /*#__PURE__*/_react.default.createElement("label", {
+  }, "Sample  Type: ", sample.sample_type)), /*#__PURE__*/_react.default.createElement("div", {
+    className: "col-6"
+  }, /*#__PURE__*/_react.default.createElement("label", {
     className: "form-control",
     style: {
       height: "auto"
     }
-  }, "Sample  status: ", sample.status))), sample.containers.map(sampleDetail => /*#__PURE__*/_react.default.createElement("div", {
-    className: "col-6"
+  }, "Sample  status: ", sample.status)), sample.containers.map(sampleDetail => /*#__PURE__*/_react.default.createElement("div", {
+    className: "col-12"
   }, /*#__PURE__*/_react.default.createElement("div", {
     className: "form-group mb-0"
   }, /*#__PURE__*/_react.default.createElement("label", {
@@ -917,7 +946,7 @@ const Summary = props => {
     className: "col-6"
   }, /*#__PURE__*/_react.default.createElement("div", {
     className: "form-group mb-0"
-  }, /*#__PURE__*/_react.default.createElement("label", null, test.test_name))), /*#__PURE__*/_react.default.createElement("div", {
+  }, /*#__PURE__*/_react.default.createElement("label", null, test.display_test_name))), /*#__PURE__*/_react.default.createElement("div", {
     className: "col-6"
   }, /*#__PURE__*/_react.default.createElement("div", {
     className: "form-group mb-0"

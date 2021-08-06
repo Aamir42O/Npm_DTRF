@@ -6,8 +6,6 @@ import moment from "moment";
 import { connect } from "react-redux";
 import formData from "../../reducers/form";
 import {
-
-
   getPcpndtFiles, getFiles, getFilesToUpload, getFilesReference, getClearDeleteFiles, getDeletedFiles, getMandatoryFilesInRedux
 } from "../../actions/fileupload";
 import CancelOutlinedIcon from '@material-ui/icons/CancelOutlined';
@@ -26,6 +24,8 @@ import reqWithToken from "../../helper/Auth";
 import { successMessage, MousePopover, errorMessage, warningMessage, infoMessage } from "../../helper/commonHelper";
 import { setFormData } from "../../actions/formData";
 import Router from 'next/router'
+import { cytoFlow, nbsFlow, niptFlow, pnsField, validateField } from "../../helper/customValidator";
+import CreateField from "../CreateField";
 
 
 const ClinicalHistory = (props) => {
@@ -35,6 +35,7 @@ const ClinicalHistory = (props) => {
   const [hasNipt, setHasNipt] = useState(false);
   const [hasPns, setHasPns] = useState(false);
   const [hasNbs, setHasNbs] = useState(false)
+  const [flowFields, setFlowFields] = useState([])
   const [, reRender] = useState();
 
   const [hasCytoPrenatal, setHasCytoPrenatal] = useState(false);
@@ -91,7 +92,7 @@ const ClinicalHistory = (props) => {
       console.log("INSIDE", process.env.NEXT_PUBLIC_ALL_REFERRAL_DOCTORS)
       let url = `${process.env.NEXT_PUBLIC_ALL_DOCTORS}?searchquery=${doctor}&${from == "referringDoctor" ? "referring_doctor=1" : "sonographer=1"}`
       console.log("INSIDE condition", url)
-      const resp = await reqWithToken(url, "GET")
+      const resp = await reqWithToken(url, "GET", null, { superDtrf: props.fromSuperDtrf, dtrfFront: props.fromDtrfFront })
       console.log(resp)
       return resp.data.data.doctorSearchList
     }
@@ -157,8 +158,22 @@ const ClinicalHistory = (props) => {
     setMandatoryFiles(mandatory_Files)
     props.getMandatoryFilesInRedux(mandatory_Files)
   }
-  useEffect(() => {
+  const getFlowFields = async () => {
+    const url = process.env.NEXT_PUBLIC_GET_FLOW_FIELDS
+    let formData = new FormData()
+    formData.append("name", hasPns ? "1" : hasNipt ? "2" : hasCyto ? "3" : "4")
+    const response = await reqWithToken(url, "POST", { name: hasPns ? "1" : hasNipt ? "2" : hasCyto ? "3" : "4" }, { dtrfFront: props.fromDtrfFront })
+    if (response) {
+      console.log("Response", response)
+      setFlowFields([...response.data.data.flow])
+      reRender({})
+    } else {
+      errorMessage("Error in getting Flow feilds")
+    }
+  }
+  useEffect(async () => {
     console.log("Props", props)
+
 
     if ((props.formValues.doctor_info.doctorName.practice_type == "Gynaecologist-Obstetrician")) {
       setIsGyno(true)
@@ -191,16 +206,13 @@ const ClinicalHistory = (props) => {
     if (testList.length == 0) {
       getTestList();
     }
+
     if (props.formDataRedux.medical_info) {
       setCurrentGestWeeks(props.formDataRedux.medical_info.medical_info.currentGestationalAgeWeeks)
       setCurrentGestDays(props.formDataRedux.medical_info.medical_info.currentGestationalAgeDays)
       console.log(props.formDataRedux.medical_info.currentGestationalAgeWeeks)
       console.log("Medical info exists", props.formDataRedux)
-      //  if(props.formDataRedux.medical_info) {
-      //   setReferralReason(props.formDataRedux.medical_info.medical_info.referralReason) 
-      //   console.log("INSIDE USE EFFECT",props.formDataRedux.medical_info.referralReason)
-      //   getPrefilledValue(props.formDataRedux.medical_info.medical_info)
-      // }
+
       if (props.formDataRedux.medical_info && props.formDataRedux.medical_info.sample_info) {
         setSampleContainerList(props.formDataRedux.medical_info.sample_info.sampleContainerList)
         setPcpndtList(props.pcpndtFiles)
@@ -208,7 +220,7 @@ const ClinicalHistory = (props) => {
       }
 
     }
-  }, []);
+  }, [flowFields]);
 
   const handleCityChange = (option) => {
     console.log(option)
@@ -246,12 +258,13 @@ const ClinicalHistory = (props) => {
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~PREFILED VALUE CLOSE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   const [isThalasammia, setIsThalasammia] = useState(false)
-  const getTestList = () => {
+  const getTestList = async () => {
     console.log("Insite GetTEstList")
     console.log("formValues", props.formValues)
     // const list = props.formDataRedux;
     const list = props.formValues
     console.log("List", list)
+    let name = ""
     let sampleContainers = [];
     let containerIdErrorsList = [];
     let containerIdValidation = []
@@ -327,7 +340,7 @@ const ClinicalHistory = (props) => {
           }
           if (test.sub_group == "CYTO" || test.sub_group == "CMA") {
             console.log("SAmple Type", test.sampleType)
-
+            name = "3"
             if (test.sample_category == "Prenatal") {
               setHasCytoPrenatal(true);
             }
@@ -336,6 +349,7 @@ const ClinicalHistory = (props) => {
             }
             setHasCyto(true);
           } else if (test.sub_group == "NIPT") {
+            name = "2"
             if (test.twin_with_donor_egg) {
               setIsDonor(true)
             }
@@ -347,6 +361,7 @@ const ClinicalHistory = (props) => {
             setHasNipt(true);
             citysAndStates.push({ city: "", state: "" })
           } else if (test.sub_group == "PNS") {
+            name = "1"
             nonMandatory_Files.push({ display: "XML File", variable: "xmlLicenseFile" })
             if (!test.twin) {
               setIsTwin(false)
@@ -384,6 +399,7 @@ const ClinicalHistory = (props) => {
             }
 
           } else if (test.sub_group == "NBS") {
+            name = "4"
             setHasNbs(true)
           }
 
@@ -431,22 +447,47 @@ const ClinicalHistory = (props) => {
           const test = list.test_info.selectedTests[i];
           sampleList.push({ sampleType: test.sampleType, test_group: test.test_group })
         }
-        const getContainers = axios.post(process.env.NEXT_PUBLIC_GET_CONTAINERS, { samples: sampleList })
-          .then((response) => {
-            const containers = response.data.data.samples.map((e, i) => {
-              return e.containers && e.containers.display_container_name.map((container, id) => {
-                containerTypeList[i] = { id, value: container, label: container }
-                setSelectedContainerType(containerTypeList)
-                return { id, value: container, label: container }
-              })
-            })
-            setContainers(containers)
-
-            console.log("$$$$$$$$$$$$$$$$\n", containers);
+        let url = process.env.NEXT_PUBLIC_GET_CONTAINERS
+        const response = await reqWithToken(url, "POST", { samples: sampleList }, { dtrfFront: props.fromDtrfFront, superDtrf: props.fromSuperDtrf })
+        const containers = response.data.data.samples.map((e, i) => {
+          return e.containers && e.containers.display_container_name.map((container, id) => {
+            containerTypeList[i] = { id, value: container, label: container }
+            setSelectedContainerType(containerTypeList)
+            return { id, value: container, label: container }
           })
-          .catch((error) => {
-            console.log(error);
-          });
+        })
+        setContainers(containers)
+
+        const url2 = process.env.NEXT_PUBLIC_GET_FLOW_FIELDS
+        let formData = new FormData()
+        formData.append("name", hasPns ? "1" : hasNipt ? "2" : hasCyto ? "3" : "4")
+        const resp = await reqWithToken(url2, "POST", { name }, { dtrfFront: props.fromDtrfFront })
+        if (resp) {
+          console.log("resp", resp)
+          setFlowFields([...resp.data.data.flow])
+          reRender({})
+        } else {
+          errorMessage("Error in getting Flow feilds")
+        }
+
+        console.log("$$$$$$$$$$$$$$$$\n", containers);
+
+        // const getContainers = axios.post(process.env.NEXT_PUBLIC_GET_CONTAINERS, { samples: sampleList })
+        //   .then((response) => {
+        //     const containers = response.data.data.samples.map((e, i) => {
+        //       return e.containers && e.containers.display_container_name.map((container, id) => {
+        //         containerTypeList[i] = { id, value: container, label: container }
+        //         setSelectedContainerType(containerTypeList)
+        //         return { id, value: container, label: container }
+        //       })
+        //     })
+        //     setContainers(containers)
+
+        //     console.log("$$$$$$$$$$$$$$$$\n", containers);
+        //   })
+        //   .catch((error) => {
+        //     console.log(error);
+        //   });
 
       }
     }
@@ -458,7 +499,7 @@ const ClinicalHistory = (props) => {
       containerIdValidationList[id] = false
       setContainerIdValidationList[containerIdValidationList]
     }
-    if (e.target.value.split("").length < 5) {
+    if (e.target.value.length < 5 && e.target.value.length > 0) {
       containerIdValidationList[id] = true
       setContainerIdValidationList(containerIdValidationList)
     } else {
@@ -530,9 +571,10 @@ const ClinicalHistory = (props) => {
   };
 
   const handleOnClickNext = (values) => {
+    console.log("firstFormikRef", firstFormikRef.current, firstFormikRef.current.errors)
     console.log("Values", values)
     if (props.fromDtrfFront) {
-
+      handleErrorSubmit()
       for (let container of sampleContainerList) {
         if (container.containers.length <= 0) {
           errorMessage("Container is empty!")
@@ -550,6 +592,10 @@ const ClinicalHistory = (props) => {
         }
         count++;
       }
+      if (hasCyto && !prefilleReferrenceDoctor) {
+        setPrefilledReferrenceDoctorError("Required")
+        return
+      }
     }
 
 
@@ -561,10 +607,7 @@ const ClinicalHistory = (props) => {
         medical_info.files = props.formDataRedux.medical_info.medical_info.files
       }
     }
-    if (hasCyto && !prefilleReferrenceDoctor) {
-      setPrefilledReferrenceDoctorError("Required")
-      return
-    }
+
     if (!hasCyto) {
       medical_info = { ...medical_info, referralReason: referralReason }
     }
@@ -786,9 +829,7 @@ const ClinicalHistory = (props) => {
   const [pcpndtFiles, setPcpndtFiles] = useState([])
   const [pcpndtFilesError, setPcpndtFilesError] = useState("")
 
-  const [patientConsentFile, setPatientConsentFile] = useState([])
-  const [isPatientConsentFile, setIsPatientConsentFile] = useState(null)
-  const [patientConsentFileError, setPatientConsentFileError] = useState("")
+
 
   const referralLetterRef = useRef()
   const fileInputRef = useRef()
@@ -796,24 +837,14 @@ const ClinicalHistory = (props) => {
   const removeFileRef = useRef()
   const pnsReportRef = useRef()
 
-  const [otherFiles, setOtherFiles] = useState([])
-  const [isOtherFiles, setIsOtherFiles] = useState(false)
-  const [otherFilesError, setOtherFilesError] = useState("")
   const otherFileRef = useRef()
 
-  const [doctorAttestationFile, setDoctorAttestationFile] = useState([])
-  const [isDoctorAttestationFile, setIsDoctorAttestationFile] = useState(false)
-  const [doctorAttestationFileError, setDoctorAttestationFileError] = useState("")
   const doctorAttestationRef = useRef()
 
-  const [patientDeclarationPNDT, setPatientDeclarationPNDT] = useState([])
-  const [isPatientDeclarationPNDT, setIsPatientDeclarationPNDT] = useState(false)
-  const [patientDeclarationPNDTError, setPatientDeclarationPNDTError] = useState("")
+
   const patientDeclarationPNDTRef = useRef()
 
-  const [patientInformedConsent, setPatientInformedConsent] = useState([])
-  const [isPatientInformedConsent, setIsPatientInformedConsent] = useState(false)
-  const [patientInformedConsentError, setPatientInformedConsentError] = useState("")
+
   const patientInformedConsentRef = useRef()
 
   const [consentAndIndemnity, setConsentAndIndemnity] = useState([])
@@ -1044,6 +1075,7 @@ const ClinicalHistory = (props) => {
   const [multipleFormRef, setMultipleFormRef] = useState()
   const handleErrorSubmit = () => {
     console.log("FIRSTFORMIKREFF", firstFormikRef)
+    firstFormikRef.current.validateForm()
     if (!(Object.keys(firstFormikRef.current.errors).length === 0 && firstFormikRef.current.errors.constructor === Object)) {
       errorMessage("Please fill in the required fields to proceed")
     }
@@ -1101,6 +1133,7 @@ const ClinicalHistory = (props) => {
       console.log("ERRORS FROM FORMIKREF", firstFormikRef.current.errors)
       if (Object.keys(firstFormikRef.current.errors).length === 0 && firstFormikRef.current.errors.constructor === Object) {
         let childErrors = {}
+
         multipleFormRef.map((ref) => {
           childErrors = { ...ref.current.errors }
         })
@@ -1145,15 +1178,16 @@ const ClinicalHistory = (props) => {
   { value: "On antibiotics", label: "On antibiotics" }
   ]
 
-  console.log("CITIES AND STATE", citiesAndStates)
-  console.log("COLLECTION LOCATION  USESTATE", collectionLocation)
+  console.log("FLOW FIELDS", flowFields)
   return (
     <>
       <div>
         <div>
           <fieldset>
             <Formik
+              isInitialValid={false}
               validateOnBlur
+              validateOnMount={true}
               innerRef={firstFormikRef}
               enableReinitialize
               initialValues={{
@@ -1257,1244 +1291,42 @@ const ClinicalHistory = (props) => {
 
               }}
               validate={(values) => {
-                const errors = {};
-                console.log(values.referralReason, "ReferralReason")
-
-                if (props.fromSuperDtrf) {
-                  if (!hasNbs) {
-                    if (!values.sampleCollectionDate) {
-                    }
-                    if (!hasCyto) {
-                      if (!values.usgDate) {
-                      }
-                      if (values.usgDate) {
-                        const diff = moment(values.usgDate).diff(moment().format("YYYY-MM-DD"), "days")
-                        console.log("usgDate DIFF", diff)
-                        if (diff > 0) {
-                          errors.usgDate = "Invalid Date"
-                        }
-                        const diff2 = moment(values.usgDate).diff(moment().format("YYYY-MM-DD"), "days")
-                        if (!(diff2 > -273)) {
-                          errors.usgDate = "Scan date should not be more than 9 month from todays date"
-                        }
-                      }
-                      if (values.sampleCollectionDate) {
-                        const diff = moment(values.sampleCollectionDate).diff(moment().format("YYYY-MM-DD"), "days")
-                        if (diff > 0) {
-                          errors.sampleCollectionDate = "Future Date is not allowed"
-                        }
-                        if (!(diff > -10)) {
-                          errors.sampleCollectionDate = "Date should be within 10 days before current date"
-                        }
-                      }
-                      if (values.usgDate && values.sampleCollectionDate &&
-                        (![null, '', false].includes(values.gestationalAgeDays)) && (![null, '', false].includes(values.gestationalAgeWeeks))) {
-                        const diff = moment(values.sampleCollectionDate).diff(moment(values.usgDate), "days")
-                        let days = diff + values.gestationalAgeDays
-                        let weeks = values.gestationalAgeWeeks
-                        console.log("Diff In Dates", weeks, days)
-                        while (days > 6) {
-                          weeks = weeks + 1
-                          days = days - 7
-                        }
-                        while (days < 0) {
-                          days = days + 7
-                          weeks = weeks - 1
-                        }
-                        setCurrentGestDays(days)
-                        setCurrentGestWeeks(weeks)
-                        console.log("Formatted weeks and days", weeks, days)
-                      }
-                      if (values.sampleCollectionDate && values.usgDate) {
-                        if ([null, '', false].includes(currentGestDays)) {
-                        }
-                        if (!currentGestWeeks) {
-                        }
-                      }
-                      firstFormikRef.current.validateField("currentGestationalAgeWeeks")
-
-                    }
-                    if ([null, '', false].includes(values.gestationalAgeDays)) {
-                    }
-                    if ([null, '', false].includes(values.gestationalAgeWeeks)) {
-                    }
-
-                    if (values.gestationalAgeDays) {
-                      if (!/^[0-9\b]+$/.test(values.gestationalAgeDays)) {
-                        errors.gestationalAgeDays = "Should only be numbers";
-                      }
-
-                      if (values.gestationalAgeDays > 6 || values.gestationalAgeDays < 0) {
-                        errors.gestationalAgeDays = "Days should be between 0 - 6";
+                let errors = {};
+                errors = validateField(hasPns ? pnsField : hasCyto ? cytoFlow : hasNbs ? nbsFlow : niptFlow, props.formDataRedux.patient_details ? { ...values, ...props.formDataRedux.patient_details } : { ...values }, { calculateCurrentGestational: true, validateGestation: hasPns ? true : false, gestationalAgeStart: gestationAgeStart, gestationalAgeEnd: gestationAgeEnd, testType: hasPreEclampsiaTest ? "hasPreEclampsia" : hasCytoPrenatal ? "cytoPrenatal" : "", testTrimester, isRequired: props.fromDtrfFront ? true : false }, values)
+                if (!values.Gravida) {
+                  values.Live = ""
+                  values.Abortion = ""
+                  values.Para = ""
+                }
+                if (hasCyto && props.fromDtrfFront) {
+                  if (values.referralReason.length > 0) {
+                    if (values.referralReason.includes("Family History of any chromosomal abnormality")) {
+                      if (!values.familyHistory) {
+                        errors.referralReason = "Please fill the checked Field"
                       }
                     }
-                    if (values.gestationalAgeWeeks) {
-                      if (!/^[0-9\b]+$/.test(values.gestationalAgeWeeks)) {
-                        errors.gestationalAgeWeeks = "Should only be numbers";
+                    if (values.referralReason.includes("Advance Maternal Age")) {
+                      if (!values.advanceMaternalAge) {
+                        errors.referralReason = "Please fill the checked Field"
                       }
                     }
-                  }
-
-
-                  if (hasNbs) {
-                    if (!values.sampleCollectionDate) {
-                    }
-                    if (values.sampleCollectionDate && values.firstFeedingDate) {
-                      const diff = moment(values.sampleCollectionDate).diff(values.firstFeedingDate, "days")
-                      console.log(diff, "SAMPLE AND FEEDING DATE DIFF")
-                      if (diff < 1) {
-                        errors.sampleCollectionDate = "Date should be greater than First feeding date by 24hrs"
-                      }
-                      // sample collection date cant be greater than patient Date of birth 
-                      const diff2 = moment(values.sampleCollectionDate).diff(props.formValues.patient_details.dateOfBirth, "days")
-                      if (diff2 < 0) {
-                        errors.sampleCollectionDate = "Date cant be before patients date of birth"
+                    if (values.referralReason.includes("Genetic Disease in Father/Mother/Sibling")) {
+                      if (!values.geneticDiseaseInFMS) {
+                        errors.referralReason = "Please fill the checked Field"
                       }
                     }
-                    if (!values.firstFeedingDate) {
-                    }
-                    if (values.firstFeedingDate) {
-                      const diff = moment(values.firstFeedingDate).diff(moment().format("YYYY-MM-DD"), "days")
-                      if (diff > 0) {
-                        errors.firstFeedingDate = "Invalid Date"
-                      }
-
-                      const diff2 = moment(values.firstFeedingDate).diff(props.formValues.patient_details.dateOfBirth, "days")
-                      if (diff2 < 0) {
-                        errors.firstFeedingDate = "Date cant be before patients date of birth"
-                      }
-                    }
-                    if (!values.typeOfFeeding) {
-                    }
-                    if (!values.hoTransfusion) {
-                    }
-                    if (values.hoTransfusion && values.hoTransfusion == "Yes") {
-
-                      if (!values.dateOfHoTransfusion) {
-                      }
-                      if (values.dateOfHoTransfusion) {
-                        const diff = moment(values.dateOfHoTransfusion).diff(moment().format("YYYY-MM-DD"), "days")
-                        if (diff > 0) {
-                          errors.dateOfHoTransfusion = "Invalid Date"
-                        }
-                        const diff2 = moment(values.dateOfHoTransfusion).diff(props.formValues.patient_details.dateOfBirth, "days")
-                        console.log({ diff2 })
-                        if (diff2 < 0) {
-                          errors.dateOfHoTransfusion = "Date cant be before patients date of birth"
-                        }
-                      }
-                    }
-                    if (!values.deliveryStatus) {
-                    }
-                    // if (!values.additionalSymptoms) {
-                    // }
-                  }
-                  if (hasPns) {
-
-                    if (values.historyOfDownSyndrome == "Yes") {
-                      if (!values.confirmatoryTestHDS) {
-                      }
-                    }
-                    if (values.historyOfEdwardsSyndrome == "Yes") {
-
-                      if (!values.confirmatoryTestHES) {
-                      }
-                    }
-                    if (values.historyOfPatauSyndrome == "Yes") {
-
-                      if (!values.confirmatoryTestHPS) {
-                      }
-                    }
-                    if (values.sampleCollectionDate && values.usgDate) {
-                      if (currentGestWeeks > gestationAgeEnd || currentGestWeeks < gestationAgeStart) {
-                        errors.currentGestationalAgeWeeks = "Weeks should be between " + gestationAgeStart + " - " + parseInt(gestationAgeEnd);
-                      }
-                      else if (!/^[0-9\b]+$/.test(currentGestWeeks)) {
-                        errors.currentGestationalAgeWeeks = "Should only be numbers";
-                      }
-
-                      if (currentGestWeeks == parseInt(gestationAgeEnd)) {
-                        console.log(gestationAgeEnd, Math.floor(gestationAgeEnd), (gestationAgeEnd + "").split(".")[1]);
-                        let endDay;
-                        try {
-                          endDay = parseInt((gestationAgeEnd + "").split(".")[1])
-                        } catch (e) {
-                          endDay = 0
-                        }
-                        if (currentGestDays > endDay || currentGestDays < 0) {
-                          errors.currentGestationalAgeDays = endDay == 0 ? "Days should be 0 only" + endDay : "Days should be between 0 - " + endDay;
-                        }
-                      }
-                      else if (currentGestDays > 6 || currentGestDays < 0) {
-                        errors.currentGestationalAgeDays = "Days should be between 0 - 6";
-                      }
-                      else if (!/^[0-9]$/i.test(currentGestDays)) {
-                        errors.currentGestationalAgeDays = "Should only be numbers";
-                      }
-                      else {
-                        if (currentGestWeeks > 22) {
-                          errors.currentGestationalAgeWeeks = "Weeks should be under 22";
-                        }
-                        else if (!/^[0-9\b]+$/.test(currentGestWeeks)) {
-                          errors.currentGestationalAgeWeeks = "Should only be numbers";
-                        }
-
-
-                        else if (currentGestDays > 6) {
-                          errors.currentGestationalAgeDays = "Days should be under 7";
-                        }
-                        else if (!/^[0-9]$/i.test(currentGestDays)) {
-                          errors.currentGestationalAgeDays = "Should only be numbers";
-                        }
-                      }
-                    }
-                  }
-
-
-
-                  if (hasCyto) {
-                    if (values.referralReason.length == 0) {
-                    }
-                    if (values.referralReason.length > 0) {
-                      if (values.referralReason.includes("Family History of any chromosomal abnormality")) {
-                        if (!values.familyHistory) {
-                          errors.referralReason = "Please fill the checked Field"
-                        }
-                      }
-                      if (values.referralReason.includes("Advance Maternal Age")) {
-                        if (!values.advanceMaternalAge) {
-                          errors.referralReason = "Please fill the checked Field"
-                        }
-                      }
-                      if (values.referralReason.includes("Genetic Disease in Father/Mother/Sibling")) {
-                        if (!values.geneticDiseaseInFMS) {
-                          errors.referralReason = "Please fill the checked Field"
-                        }
-                      }
-                      if (values.referralReason.includes("Consanguinity")) {
-                        if (!values.consanguinity) {
-                          errors.referralReason = "Please fill the checked Field"
-                        }
-                      }
-                      if (values.referralReason.includes("Others")) {
-                        if (!values.Others) {
-                          errors.referralReason = "Please fill the checked Field"
-                        }
-                      }
-                    }
-                    if (hasCytoPrenatal) {
-                      if (!values.maternalAge) {
-                      }
-                      if (!values.motherGeneticDisease) {
-                      }
-                      if (!values.fatherGeneticDisease) {
-                      }
-                      if (!values.siblingGeneticDisease) {
-                      }
-
-                    }
-                    if (hasPoc || hasCytoPrenatal) {
+                    if (values.referralReason.includes("Consanguinity")) {
                       if (!values.consanguinity) {
+                        errors.referralReason = "Please fill the checked Field"
                       }
                     }
-
-                    if (sampleContainerList.length <= 0) {
-                    }
-                  }
-                  if (hasNipt || hasPns) {
-                    "Para", "", "Live"
-                    if (values.Gravida) {
-                      if (values.Gravida < 0 || values.Gravida > 20) {
-                        errors.Gravida = "Values should be between 0 - 20"
+                    if (values.referralReason.includes("Others")) {
+                      if (!values.Others) {
+                        errors.referralReason = "Please fill the checked Field"
                       }
                     }
-                    if (values.Abortion && values.Gravida) {
-                      if (values.Abortion > values.Gravida) {
-                        errors.Abortion = "Value cant be greater than Gravida"
-                      }
-                    }
-                    if (values.Live) {
-                      // if (values.Live < 0 || values.Live > 20) {
-                      //   errors.Live = "Values should be between 0 - 20"
-                      // }
-                      if (values.Abortion) {
-                        const diff = values.Gravida - values.Abortion
-                        if (values.Live > diff) {
-                          errors.Live = `Value of Live should be less than or equal to ${diff}`
-                        }
-                      } else {
-                        const diff = values.Gravida - 0
-                        if (values.Live > diff) {
-                          errors.live = `Value of Live should be less than or equal to ${diff} `
-                        }
-                      }
-                    }
-                    if (values.Gravida && values.Abortion) {
-                      if (values.Gravida < values.Abortion) {
-                        errors.Gravida = "value cant be lower than Abortion"
-                      }
-                    }
-
-                    if (values.Para) {
-                      if (values.Para < 0 || values.Para > 20) {
-                        errors.Para = "Values should be between 0 - 20"
-                      }
-                      if (values.Para > values.Gravida) {
-                        errors.Para = "Value cant be greater than Gravida"
-                      }
-                    }
-                    if (/^[0-9\b]+$/.test(values.Abortion)) {
-                      if (values.Abortion < 0 || values.Abortion > 20) {
-                        errors.Abortion = "Values should be between 0 - 20"
-                      }
-                    }
-                    if (values.Abortion < 0) {
-                      errors.Abortion = "Values should be between 1 - 20"
-                    }
-                    if (values.hasPns) {
-                      if (values.hasPns < 0 || values.hasPns > 20) {
-                        errors.hasPns = "Values should be between 0 - 20"
-                      }
-                    }
-                    if (!values.presentPregnancy) {
-                    }
-
-                  }
-                  if (hasNipt) {
-                    if (values.presentPregnancy == "Twins") {
-                      if (values.eggUsed == "Donor") {
-                        console.log("INSIDE DONOR VALIDATION")
-                        errors.eggUsed = "Donor is not a valid option"
-                      }
-                    }
-                    if (values.presentPregnancy == "Vanishing Twin") {
-                      if (!values.dateOfTwinVanishOrReduced) {
-                      } else if (!(moment(moment().subtract(28, 'days').format('yyyy-MM-DD')).diff(values.dateOfTwinVanishOrReduced) > 0)) {
-                        errors.dateOfTwinVanishOrReduced = "Date should be 4 weeks prior";
-                      }
-                    }
-                    // if(referralLetter.length==0){
-                    // }else{
-                    //   setReferralLetterError("")
-                    // }
-                    if (!values.ivfPregnancy) {
-                    }
-                    if (values.ivfPregnancy == "Yes") {
-
-                      if (!values.eggUsed) {
-                      }
-                      if (!values.ageAtEggRetrieval) {
-                      }
-
-                    }
-                    if (!values.surrogate) {
-                    }
-                    if (!values.previousPregnancy) {
-                    } else if (values.previousPregnancy == "Yes") {
-                      if (!values.prevPregDate) {
-                      }
-                      if (!values.spontaneousAbortion) {
-                      }
-                      if (!values.terminationPregnancy) {
-                      }
-                    }
-
-                    if (referralReason.length > 0) {
-                      console.log(referralReason);
-                      referralReason.map((reason) => {
-                        if (reason.value == "previous pregnancy affected by genetic disorders" && !values.conditionAffectsPreviousPregnancy) {
-                        }
-                        if (reason.value ==
-                          "patient is a carrier of genetic disorders" &&
-                          !values.conditionPatientIsCarrierOf) {
-                        }
-                        if (
-                          reason.value ==
-                          "serum screen risk"
-                        ) {
-                          if (!values.t21RiskScore) {
-                          }
-                          if (!values.t18RiskScore) {
-                          }
-                          if (!values.t13RiskScore) {
-                          }
-
-                        }
-                        if (
-                          reason.value ==
-                          "family history" &&
-                          !values.familyHistory
-                        ) {
-                        }
-                        if (reason.value == "others" && !values.otherReferralReason) {
-                        }
-                        delete errors.referralReason
-
-                      })
-                    }
-                    // else {
-                    // }
-                  }
-
-                  if (hasPns || hasNipt) {
-                    if (values.presentPregnancy == "Twins") {
-
-                      if (values.twinType == "Monochorionic") {
-                        if (testTrimester == "First") {
-
-                          if (values.twinCrl1 && !values.twinCrl2) {
-
-                            values.twinCrl2 = values.twinCrl1
-                          }
-                        }
-                        if (!values.monochorionicType) {
-                        }
-                      }
-                    }
-                  }
-                  if (hasPns) {
-
-                    if (values.lmpDate) {
-                      const diff = moment(values.lmpDate).diff(moment().format("YYYY-MM-DD"), "days")
-                      if (diff > 0) {
-                        errors.lmpDate = "Invalid Date"
-                      }
-                      if (diff >= -35) {
-                        errors.lmpDate = "Date should be before or equal to 5 weeks of current date"
-
-                      }
-                    }
-                    if (!values.usgCorrEddDate) {
-
-                    } else if (moment(values.sampleCollectionDate).diff(values.usgCorrEddDate) > 0) {
-                      errors.usgCorrEddDate = "Only future date allowed";
-                    }
-                    else {
-                      const diff = moment(values.usgCorrEddDate).diff(moment().format("YYYY-MM-DD"), "days")
-                      if (diff <= 0) {
-                        errors.usgCorrEddDate = "Only future date is allowed"
-                      }
-                    }
-
-
-                    if (!values.historyOfDownSyndrome) {
-                    }
-                    if (!values.historyOfEdwardsSyndrome) {
-                    }
-                    if (!values.historyOfPatauSyndrome) {
-                    }
-                    if (!values.diabetesInsulinDependent) {
-                    }
-                    if (values.diabetesInsulinDependent == "Yes") {
-                      // if (!values.insulinDate) {
-                      // }
-                      if (!values.gestational) {
-                      }
-                    }
-                    if (!values.patientOnHcg) {
-                    }
-                    if (values.patientOnHcg == "Yes") {
-                    }
-                    if (!values.typeOfConception) {
-                    }
-                    if (values.typeOfConception == "Assisted") {
-                      if (!values.typeOfProcedure) {
-                      }
-                      if (!values.extractionDate) {
-                      }
-                      if (!values.transferDate) {
-                      }
-                      if (values.transferDate && values.extractionDate) {
-                        const diff2 = moment(values.transferDate).diff(values.extractionDate, "days")
-                        if (diff2 < 0) {
-                          errors.transferDate = "Date cant be before Extraction date"
-                        }
-                      }
-
-                      if (values.typeOfProcedure == "Donor Egg") {
-                        if (!values.donorDob) {
-                        }
-                        if (values.donorDob) {
-                          const age = moment().subtract(18, "years").diff(values.donorDob);
-                          if (age < 0) {
-                            errors.donorDob = "Age should be greater than 18"
-                          }
-                          console.log(age)
-                        }
-                      }
-                    }
-
-                    if (testTrimester == "First") {
-
-                      if (values.presentPregnancy != "Twins") {
-
-                        if ([null, '', false].includes(values.crl)) {
-                        } else if (hasPns && (values.crl > 85)) {
-                          errors.crl = "CRL should be between 0 and 85"
-                        }
-                        else if ((values.crl > 84 || values.crl < 45) && !hasPns) {
-                          errors.crl = "CRL should be between 45 and 84";
-                        } else if (!/^\s*-?\d+(\.\d{1,2})?\s*$/.test(values.crl)) {
-                          errors.crl = "Max two digits allowed after decimal";
-                        }
-                        if ([null, '', false].includes(values.nt)) {
-                        } else if (!/^\s*-?\d+(\.\d{1,2})?\s*$/.test(values.nt)) {
-                          errors.nt = "Max two digits allowed after decimal";
-                        } else if ("e".includes(values.nt)) {
-                          errors.nt = "Only Numbers is allowed"
-                        }
-                        if (!values.nb) {
-                        }
-                      }
-                    }
-                    if (values.presentPregnancy == "Twins") {
-
-                      if ([null, '', false].includes(values.twinCrl1)) {
-                      } else if (!hasPns && (values.twinCrl1 >= 84 || values.twinCrl1 <= 45)) {
-                        errors.twinCrl1 = "Value should be between 45 and 84";
-                      } else if (!/^\s*-?\d+(\.\d{1,2})?\s*$/.test(values.twinCrl1)) {
-                        errors.twinCrl1 = "Max two digits allowed after decimal";
-                      } else if (hasPns && (values.twinCrl1 > 85 || values.twinCrl1 < 0)) {
-                        errors.twinCrl1 = "Value should be between 0 and 85"
-                      }
-
-                      if ([null, '', false].includes(values.twinCrl2)) {
-                      } else if (!hasPns && (values.twinCrl2 >= 84 || values.twinCrl2 <= 45)) {
-                        errors.twinCrl2 = "Value should be between 45 and 84";
-                      } else if (!/^\s*-?\d+(\.\d{1,2})?\s*$/.test(values.twinCrl2)) {
-                        errors.twinCrl2 = "Max two digits allowed after decimal";
-                      } else if (hasPns && (values.twinCrl2 > 85 || values.twinCrl2 < 0)) {
-                        errors.twinCrl2 = "Value should be between 0 and 85"
-                      }
-                      // if (!values.twinNt1) {
-                      // }
-                      // if (!values.twinNt2) {
-                      // }
-                      // if (!values.twinNb1) {
-                      // }
-                      // if (!values.twinNb2) {
-                      // }
-
-                    }
-                    if (testTrimester == "Second") {
-                      if (values.crl != "" || values.crl === 0) {
-
-                        if (values.crl > 85) {
-                          errors.crl = "CRL should be below 85";
-                        } else if (!/^\s*-?\d+(\.\d{1,2})?\s*$/.test(values.crl)) {
-                          errors.crl = "Max two digits allowed after decimal";
-                        }
-                      } else {
-                        delete errors.crl;
-                      }
-                      if (!(values.bpd || values.fl || values.hc || values.crl)) {
-                        errors.fl = "At least one should be filled";
-                      }
-
-                    }
-                    if (hasPreEclampsiaTest) {
-                      if (!values.bpMeasurementDate) {
-                      }
-                      if (!values.bpLeftSystolic1) {
-                      }
-                      if (!values.bpLeftDiSystolic1) {
-                      }
-                      if (!values.bpLeftSystolic2) {
-                      }
-                      if (!values.bpLeftDiSystolic2) {
-                      }
-                      if (!values.bpRightSystolic1) {
-                      }
-                      if (!values.bpRightDiSystolic1) {
-                      }
-                      if (!values.bpRightSystolic2) {
-                      }
-                      if (!values.bpRightDiSystolic2) {
-                      }
-                      if (!values.mapReading1) {
-                      }
-                      if (!values.mapReading2) {
-                      }
-                      if (!values.familyHistoryPreEclampsia) {
-                      }
-                      if (!values.chronicHypertension) {
-                      }
-                      if (!values.uterineArteryPulsativeIndexRightPI) {
-                      }
-                      if (!values.uterineArteryPulsativeIndexLeftPI) {
-                      }
-                    }
-
                   }
                 }
-                else if (props.fromDtrfFront) {
-                  if (!hasNbs) {
-                    if (!values.sampleCollectionDate) {
-                      errors.sampleCollectionDate = "Required"
-                    }
-                    if (!hasCyto) {
-                      if (!values.usgDate) {
-                        errors.usgDate = "Required"
-                      }
-                      if (values.usgDate) {
-                        const diff = moment(values.usgDate).diff(moment().format("YYYY-MM-DD"), "days")
-                        console.log("usgDate DIFF", diff)
-                        if (diff > 0) {
-                          errors.usgDate = "Invalid Date"
-                        }
-                        const diff2 = moment(values.usgDate).diff(moment().format("YYYY-MM-DD"), "days")
-                        if (!(diff2 > -273)) {
-                          errors.usgDate = "Scan date should not be more than 9 month from todays date"
-                        }
-                      }
-                      if (values.sampleCollectionDate) {
-                        const diff = moment(values.sampleCollectionDate).diff(moment().format("YYYY-MM-DD"), "days")
-                        if (diff > 0) {
-                          errors.sampleCollectionDate = "Future Date is not allowed"
-                        }
-                        if (!(diff > -10)) {
-                          errors.sampleCollectionDate = "Date should be within 10 days before current date"
-                        }
-                      }
-                      if (values.usgDate && values.sampleCollectionDate &&
-                        (![null, '', false].includes(values.gestationalAgeDays)) && (![null, '', false].includes(values.gestationalAgeWeeks))) {
-                        const diff = moment(values.sampleCollectionDate).diff(moment(values.usgDate), "days")
-                        let days = diff + values.gestationalAgeDays
-                        let weeks = values.gestationalAgeWeeks
-                        console.log("Diff In Dates", weeks, days)
-                        while (days > 6) {
-                          weeks = weeks + 1
-                          days = days - 7
-                        }
-                        while (days < 0) {
-                          days = days + 7
-                          weeks = weeks - 1
-                        }
-                        setCurrentGestDays(days)
-                        setCurrentGestWeeks(weeks)
-                        console.log("Formatted weeks and days", weeks, days)
-                      }
-                      if (values.sampleCollectionDate && values.usgDate) {
-                        if ([null, '', false].includes(currentGestDays)) {
-                          errors.currentGestationalAgeDays = "Required"
-                        }
-                        if (!currentGestWeeks) {
-                          errors.currentGestationalAgeWeeks = "Required"
-                        }
-                      }
-                      firstFormikRef.current.validateField("currentGestationalAgeWeeks")
-
-                    }
-                    if ([null, '', false].includes(values.gestationalAgeDays)) {
-                      errors.gestationalAgeDays = "Required"
-                    }
-                    if ([null, '', false].includes(values.gestationalAgeWeeks)) {
-                      errors.gestationalAgeWeeks = "Required"
-                    }
-
-                    if (values.gestationalAgeDays) {
-                      if (!/^[0-9\b]+$/.test(values.gestationalAgeDays)) {
-                        errors.gestationalAgeDays = "Should only be numbers";
-                      }
-
-                      if (values.gestationalAgeDays > 6 || values.gestationalAgeDays < 0) {
-                        errors.gestationalAgeDays = "Days should be between 0 - 6";
-                      }
-                    }
-                    if (values.gestationalAgeWeeks) {
-                      if (!/^[0-9\b]+$/.test(values.gestationalAgeWeeks)) {
-                        errors.gestationalAgeWeeks = "Should only be numbers";
-                      }
-                    }
-                  }
-
-
-                  if (hasNbs) {
-                    if (!values.sampleCollectionDate) {
-                      errors.sampleCollectionDate = "Required"
-                    }
-                    if (values.sampleCollectionDate && values.firstFeedingDate) {
-                      const diff = moment(values.sampleCollectionDate).diff(values.firstFeedingDate, "days")
-                      console.log(diff, "SAMPLE AND FEEDING DATE DIFF")
-                      if (diff < 1) {
-                        errors.sampleCollectionDate = "Date should be greater than First feeding date by 24hrs"
-                      }
-                      // sample collection date cant be greater than patient Date of birth 
-                      const diff2 = moment(values.sampleCollectionDate).diff(props.formValues.patient_details.dateOfBirth, "days")
-                      if (diff2 < 0) {
-                        errors.sampleCollectionDate = "Date cant be before patients date of birth"
-                      }
-                    }
-                    if (!values.firstFeedingDate) {
-                      errors.firstFeedingDate = "Required"
-                    }
-                    if (values.firstFeedingDate) {
-                      const diff = moment(values.firstFeedingDate).diff(moment().format("YYYY-MM-DD"), "days")
-                      if (diff > 0) {
-                        errors.firstFeedingDate = "Invalid Date"
-                      }
-
-                      const diff2 = moment(values.firstFeedingDate).diff(props.formValues.patient_details.dateOfBirth, "days")
-                      if (diff2 < 0) {
-                        errors.firstFeedingDate = "Date cant be before patients date of birth"
-                      }
-                    }
-                    if (!values.typeOfFeeding) {
-                      errors.typeOfFeeding = "Required"
-                    }
-                    if (!values.hoTransfusion) {
-                      errors.hoTransfusion = "Required"
-                    }
-                    if (values.hoTransfusion && values.hoTransfusion == "Yes") {
-
-                      if (!values.dateOfHoTransfusion) {
-                        errors.dateOfHoTransfusion = "Required"
-                      }
-                      if (values.dateOfHoTransfusion) {
-                        const diff = moment(values.dateOfHoTransfusion).diff(moment().format("YYYY-MM-DD"), "days")
-                        if (diff > 0) {
-                          errors.dateOfHoTransfusion = "Invalid Date"
-                        }
-                        const diff2 = moment(values.dateOfHoTransfusion).diff(props.formValues.patient_details.dateOfBirth, "days")
-                        console.log({ diff2 })
-                        if (diff2 < 0) {
-                          errors.dateOfHoTransfusion = "Date cant be before patients date of birth"
-                        }
-                      }
-                    }
-                    if (!values.deliveryStatus) {
-                      errors.deliveryStatus = "Required"
-                    }
-                    // if (!values.additionalSymptoms) {
-                    //   errors.additionalSymptoms = "Required"
-                    // }
-                  }
-                  if (hasPns) {
-
-                    if (values.historyOfDownSyndrome == "Yes") {
-                      if (!values.confirmatoryTestHDS) {
-                        errors.confirmatoryTestHDS = "Required"
-                      }
-                    }
-                    if (values.historyOfEdwardsSyndrome == "Yes") {
-
-                      if (!values.confirmatoryTestHES) {
-                        errors.confirmatoryTestHES = "Required"
-                      }
-                    }
-                    if (values.historyOfPatauSyndrome == "Yes") {
-
-                      if (!values.confirmatoryTestHPS) {
-                        errors.confirmatoryTestHPS = "Required"
-                      }
-                    }
-                    if (values.sampleCollectionDate && values.usgDate) {
-                      if (currentGestWeeks > gestationAgeEnd || currentGestWeeks < gestationAgeStart) {
-                        errors.currentGestationalAgeWeeks = "Weeks should be between " + gestationAgeStart + " - " + parseInt(gestationAgeEnd);
-                      }
-                      else if (!/^[0-9\b]+$/.test(currentGestWeeks)) {
-                        errors.currentGestationalAgeWeeks = "Should only be numbers";
-                      }
-
-                      if (currentGestWeeks == parseInt(gestationAgeEnd)) {
-                        console.log(gestationAgeEnd, Math.floor(gestationAgeEnd), (gestationAgeEnd + "").split(".")[1]);
-                        let endDay;
-                        try {
-                          endDay = parseInt((gestationAgeEnd + "").split(".")[1])
-                        } catch (e) {
-                          endDay = 0
-                        }
-                        if (currentGestDays > endDay || currentGestDays < 0) {
-                          errors.currentGestationalAgeDays = endDay == 0 ? "Days should be 0 only" + endDay : "Days should be between 0 - " + endDay;
-                        }
-                      }
-                      else if (currentGestDays > 6 || currentGestDays < 0) {
-                        errors.currentGestationalAgeDays = "Days should be between 0 - 6";
-                      }
-                      else if (!/^[0-9]$/i.test(currentGestDays)) {
-                        errors.currentGestationalAgeDays = "Should only be numbers";
-                      }
-                      else {
-                        if (currentGestWeeks > 22) {
-                          errors.currentGestationalAgeWeeks = "Weeks should be under 22";
-                        }
-                        else if (!/^[0-9\b]+$/.test(currentGestWeeks)) {
-                          errors.currentGestationalAgeWeeks = "Should only be numbers";
-                        }
-
-
-                        else if (currentGestDays > 6) {
-                          errors.currentGestationalAgeDays = "Days should be under 7";
-                        }
-                        else if (!/^[0-9]$/i.test(currentGestDays)) {
-                          errors.currentGestationalAgeDays = "Should only be numbers";
-                        }
-                      }
-                    }
-                  }
-                  if (hasCyto) {
-                    if (values.referralReason.length == 0) {
-                      errors.referralReason = "Atleast One is Required"
-                    }
-                    if (values.referralReason.length > 0) {
-                      if (values.referralReason.includes("Family History of any chromosomal abnormality")) {
-                        if (!values.familyHistory) {
-                          errors.referralReason = "Please fill the checked Field"
-                        }
-                      }
-                      if (values.referralReason.includes("Advance Maternal Age")) {
-                        if (!values.advanceMaternalAge) {
-                          errors.referralReason = "Please fill the checked Field"
-                        }
-                      }
-                      if (values.referralReason.includes("Genetic Disease in Father/Mother/Sibling")) {
-                        if (!values.geneticDiseaseInFMS) {
-                          errors.referralReason = "Please fill the checked Field"
-                        }
-                      }
-                      if (values.referralReason.includes("Consanguinity")) {
-                        if (!values.consanguinity) {
-                          errors.referralReason = "Please fill the checked Field"
-                        }
-                      }
-                      if (values.referralReason.includes("Others")) {
-                        if (!values.Others) {
-                          errors.referralReason = "Please fill the checked Field"
-                        }
-                      }
-                    }
-                    if (hasCytoPrenatal) {
-                      if (!values.maternalAge) {
-                        errors.maternalAge = "Required";
-                      }
-                      if (!values.motherGeneticDisease) {
-                        errors.motherGeneticDisease = "Required";
-                      }
-                      if (!values.fatherGeneticDisease) {
-                        errors.fatherGeneticDisease = "Required";
-                      }
-                      if (!values.siblingGeneticDisease) {
-                        errors.siblingGeneticDisease = "Required";
-                      }
-
-                    }
-                    if (hasPoc || hasCytoPrenatal) {
-                      if (!values.consanguinity) {
-                        errors.consanguinity = "Required"
-                      }
-                    }
-
-                    if (sampleContainerList.length <= 0) {
-                      errors.containerId = "Required";
-                    }
-                  }
-                  if (hasNipt || hasPns) {
-                    "Para", "", "Live"
-                    if (values.Gravida) {
-                      if (values.Gravida < 0 || values.Gravida > 20) {
-                        errors.Gravida = "Values should be between 0 - 20"
-                      }
-                    }
-                    if (values.Live) {
-                      // if (values.Live < 0 || values.Live > 20) {
-                      //   errors.Live = "Values should be between 0 - 20"
-                      // }
-                      if (values.Abortion) {
-                        const diff = values.Gravida - values.Abortion
-                        if (values.Live > diff) {
-                          errors.Live = `Value of Live should be less than or equal to ${diff}`
-                        }
-                      } else {
-                        const diff = values.Gravida - 0
-                        if (values.Live > diff) {
-                          errors.live = `Value of Live should be less than or equal to ${diff} `
-                        }
-                      }
-                    }
-                    if (values.Gravida && values.Abortion) {
-                      if (values.Gravida < values.Abortion) {
-                        errors.Gravida = "value cant be lower than Abortion"
-                      }
-                    }
-
-                    if (values.Para) {
-                      if (values.Para < 0 || values.Para > 20) {
-                        errors.Para = "Values should be between 0 - 20"
-                      }
-                      if (values.Para > values.Gravida) {
-                        errors.Para = "Value cant be greater than Gravida"
-                      }
-                    }
-                    if (/^[0-9\b]+$/.test(values.Abortion)) {
-                      if (values.Abortion < 0 || values.Abortion > 20) {
-                        errors.Abortion = "Values should be between 0 - 20"
-                      }
-                    }
-                    if (values.Abortion < 0) {
-                      errors.Abortion = "Values should be between 1 - 20"
-                    }
-                    if (values.hasPns) {
-                      if (values.hasPns < 0 || values.hasPns > 20) {
-                        errors.hasPns = "Values should be between 0 - 20"
-                      }
-                    }
-                    if (!values.presentPregnancy) {
-                      errors.presentPregnancy = "Required";
-                    }
-
-                  }
-                  if (hasNipt) {
-                    if (values.presentPregnancy == "Twins") {
-                      if (values.eggUsed == "Donor") {
-                        console.log("INSIDE DONOR VALIDATION")
-                        errors.eggUsed = "Donor is not a valid option"
-                      }
-                    }
-                    if (values.presentPregnancy == "Vanishing Twin") {
-                      if (!values.dateOfTwinVanishOrReduced) {
-                        errors.dateOfTwinVanishOrReduced = "Required";
-                      } else if (!(moment(moment().subtract(28, 'days').format('yyyy-MM-DD')).diff(values.dateOfTwinVanishOrReduced) > 0)) {
-                        errors.dateOfTwinVanishOrReduced = "Date should be 4 weeks prior";
-                      }
-                    }
-                    // if(referralLetter.length==0){
-                    //   setReferralLetterError("File Required")
-                    // }else{
-                    //   setReferralLetterError("")
-                    // }
-                    if (!values.ivfPregnancy) {
-                      errors.ivfPregnancy = "Required";
-                    }
-                    if (values.ivfPregnancy == "Yes") {
-
-                      if (!values.eggUsed) {
-                        errors.eggUsed = "Required";
-                      }
-                      if (!values.ageAtEggRetrieval) {
-                        errors.ageAtEggRetrieval = "Required";
-                      }
-
-                    }
-                    if (!values.surrogate) {
-                      errors.surrogate = "Required";
-                    }
-                    if (!values.previousPregnancy) {
-                      errors.previousPregnancy = "Required"
-                    } else if (values.previousPregnancy == "Yes") {
-                      if (!values.prevPregDate) {
-                        errors.prevPregDate = "Required"
-                      }
-                      if (!values.spontaneousAbortion) {
-                        errors.spontaneousAbortion = "Required"
-                      }
-                      if (!values.terminationPregnancy) {
-                        errors.terminationPregnancy = "Required"
-                      }
-                    }
-
-                    if (referralReason.length > 0) {
-                      console.log(referralReason);
-                      referralReason.map((reason) => {
-                        if (reason.value == "previous pregnancy affected by genetic disorders" && !values.conditionAffectsPreviousPregnancy) {
-                          errors.conditionAffectsPreviousPregnancy = "Required"
-                        }
-                        if (reason.value ==
-                          "patient is a carrier of genetic disorders" &&
-                          !values.conditionPatientIsCarrierOf) {
-                          errors.conditionPatientIsCarrierOf = "Required";
-                        }
-                        if (
-                          reason.value ==
-                          "serum screen risk"
-                        ) {
-                          if (!values.t21RiskScore) {
-                            errors.t21RiskScore = "Required";
-                          }
-                          if (!values.t18RiskScore) {
-                            errors.t18RiskScore = "Required";
-                          }
-                          if (!values.t13RiskScore) {
-                            errors.t13RiskScore = "Required";
-                          }
-
-                        }
-                        if (
-                          reason.value ==
-                          "family history" &&
-                          !values.familyHistory
-                        ) {
-                          errors.familyHistory = "Required";
-                        }
-                        if (reason.value == "others" && !values.otherReferralReason) {
-                          errors.otherReferralReason = "Required";
-                        }
-                        delete errors.referralReason
-
-                      })
-                    }
-                    // else {
-                    //   errors.referralReason = "Required"
-                    // }
-                  }
-
-                  if (hasPns || hasNipt) {
-                    if (values.presentPregnancy == "Twins") {
-
-                      if (values.twinType == "Monochorionic") {
-                        if (testTrimester == "First") {
-
-                          if (values.twinCrl1 && !values.twinCrl2) {
-
-                            values.twinCrl2 = values.twinCrl1
-                          }
-                        }
-                        if (!values.monochorionicType) {
-                          errors.monochorionicType = "Required"
-                        }
-                      }
-                    }
-                  }
-                  if (hasPns) {
-
-                    if (values.lmpDate) {
-                      const diff = moment(values.lmpDate).diff(moment().format("YYYY-MM-DD"), "days")
-                      if (diff > 0) {
-                        errors.lmpDate = "Invalid Date"
-                      }
-                      if (diff >= -35) {
-                        errors.lmpDate = "Date should be before or equal to 5 weeks of current date"
-
-                      }
-                    }
-                    if (!values.usgCorrEddDate) {
-
-                      errors.usgCorrEddDate = "Required";
-                    } else if (moment(values.sampleCollectionDate).diff(values.usgCorrEddDate) > 0) {
-                      errors.usgCorrEddDate = "Only future date allowed";
-                    }
-                    else {
-                      const diff = moment(values.usgCorrEddDate).diff(moment().format("YYYY-MM-DD"), "days")
-                      if (diff <= 0) {
-                        errors.usgCorrEddDate = "Only future date is allowed"
-                      }
-                    }
-
-
-                    if (!values.historyOfDownSyndrome) {
-                      errors.historyOfDownSyndrome = "Required";
-                    }
-                    if (!values.historyOfEdwardsSyndrome) {
-                      errors.historyOfEdwardsSyndrome = "Required";
-                    }
-                    if (!values.historyOfPatauSyndrome) {
-                      errors.historyOfPatauSyndrome = "Required"
-                    }
-                    if (!values.diabetesInsulinDependent) {
-                      errors.diabetesInsulinDependent = "Required";
-                    }
-                    if (values.diabetesInsulinDependent == "Yes") {
-                      // if (!values.insulinDate) {
-                      //   errors.insulinDate = "Required";
-                      // }
-                      if (!values.gestational) {
-                        errors.gestational = "Required";
-                      }
-                    }
-                    if (!values.patientOnHcg) {
-                      errors.patientOnHcg = "Required";
-                    }
-                    if (values.patientOnHcg == "Yes") {
-                      // if (!values.hcgIntakeDate) {
-                      //   errors.hcgIntakeDate = "Required";
-                      // }
-                      // if (values.hcgIntakeDate) {
-                      //   if (moment().diff(values.hcgIntakeDate, "days") == 0) {
-                      //     errors.hcgIntakeDate = "Invalid date"
-                      //   }
-                      //   const date = moment().subtract(1, "days")
-                      //   const yesterDayDate = moment(date).format("YYYY-MM-DD")
-                      //   const diff = moment(yesterDayDate).diff(values.hcgIntakeDate, "days")
-                      //   console.log("hcgIntakeDate", diff)
-                      //   if (diff == 0) {
-                      //   }
-                      //     errors.hcgIntakeDate = "Yesterday date is not valid"
-                      // }
-                    }
-                    if (!values.typeOfConception) {
-                      errors.typeOfConception = "Required";
-                    }
-                    if (values.typeOfConception == "Assisted") {
-                      if (!values.typeOfProcedure) {
-                        errors.typeOfProcedure = "Required";
-                      }
-                      if (!values.extractionDate) {
-                        errors.extractionDate = "Required";
-                      }
-                      if (!values.transferDate) {
-                        errors.transferDate = "Required";
-                      }
-                      if (values.transferDate && values.extractionDate) {
-                        const diff2 = moment(values.transferDate).diff(values.extractionDate, "days")
-                        if (diff2 < 0) {
-                          errors.transferDate = "Date cant be before Extraction date"
-                        }
-                      }
-
-
-                      if (values.typeOfProcedure == "Donor Egg") {
-                        if (!values.donorDob) {
-                          errors.donorDob = "Required";
-                        }
-                        if (values.donorDob) {
-                          const age = moment().subtract(18, "years").diff(values.donorDob);
-                          if (age < 0) {
-                            errors.donorDob = "Age should be greater than 18"
-                          }
-                          console.log(age)
-                        }
-                      }
-                    }
-
-                    if (testTrimester == "First") {
-
-                      if (values.presentPregnancy != "Twins") {
-                        console.log("present pregnancy ", values.presentPregnancy)
-                        if ([null, '', false].includes(values.crl)) {
-                          errors.crl = "Required";
-                        } else if (hasPns && (values.crl > 85)) {
-                          errors.crl = "CRL should be between 0 and 85"
-                        }
-                        else if ((values.crl > 84 || values.crl < 45) && !hasPns) {
-                          errors.crl = "CRL should be between 45 and 84";
-                        } else if (!/^\s*-?\d+(\.\d{1,2})?\s*$/.test(values.crl)) {
-                          errors.crl = "Max two digits allowed after decimal";
-                        }
-                        if ([null, '', false].includes(values.nt)) {
-                          // errors.nt = "Required";
-                        } else if (!/^\s*-?\d+(\.\d{1,2})?\s*$/.test(values.nt)) {
-                          errors.nt = "Max two digits allowed after decimal";
-                        } else if ("e".includes(values.nt)) {
-                          errors.nt = "Only Numbers is allowed"
-                        }
-                        if (!values.nb) {
-                          // errors.nb = "Required";
-                        }
-                      }
-
-                    }
-                    if (values.presentPregnancy == "Twins") {
-
-                      if ([null, '', false].includes(values.twinCrl1)) {
-                        errors.twinCrl1 = "Required";
-                      } else if (!hasPns && (values.twinCrl1 >= 84 || values.twinCrl1 <= 45)) {
-                        errors.twinCrl1 = "Value should be between 45 and 84";
-                      } else if (!/^\s*-?\d+(\.\d{1,2})?\s*$/.test(values.twinCrl1)) {
-                        errors.twinCrl1 = "Max two digits allowed after decimal";
-                      } else if (hasPns && (values.twinCrl1 > 85 || values.twinCrl1 < 0)) {
-                        errors.twinCrl1 = "Value should be between 0 and 85"
-                      }
-
-                      if ([null, '', false].includes(values.twinCrl2)) {
-                        errors.twinCrl2 = "Required";
-                      } else if (!hasPns && (values.twinCrl2 >= 84 || values.twinCrl2 <= 45)) {
-                        errors.twinCrl2 = "Value should be between 45 and 84";
-                      } else if (!/^\s*-?\d+(\.\d{1,2})?\s*$/.test(values.twinCrl2)) {
-                        errors.twinCrl2 = "Max two digits allowed after decimal";
-                      } else if (hasPns && (values.twinCrl2 > 85 || values.twinCrl2 < 0)) {
-                        errors.twinCrl2 = "Value should be between 0 and 85"
-                      }
-                      if (!values.twinNt1) {
-                        errors.twinNt1 = "Required";
-                      }
-                      if (!values.twinNt2) {
-                        errors.twinNt2 = "Required";
-                      }
-                      // if (!values.twinNb1) {
-                      //   errors.twinNb1 = "Required";
-                      // }
-                      // if (!values.twinNb2) {
-                      //   errors.twinNb2 = "Required";
-                      // }
-
-                    }
-                    if (testTrimester == "Second") {
-                      if (values.crl != "" || values.crl === 0) {
-
-                        if (values.crl > 85) {
-                          errors.crl = "CRL should be below 85";
-                        } else if (!/^\s*-?\d+(\.\d{1,2})?\s*$/.test(values.crl)) {
-                          errors.crl = "Max two digits allowed after decimal";
-                        }
-                      } else {
-                        delete errors.crl;
-                      }
-                      if (!(values.bpd || values.fl || values.hc || values.crl)) {
-                        errors.fl = "At least one should be filled";
-                      }
-
-                    }
-                    if (hasPreEclampsiaTest) {
-                      if (!values.bpOrMap) {
-                        errors.bpOrMap = "Required"
-                      } else {
-                        if (values.bpOrMap == "BP") {
-                          if (!values.bpMeasurementDate) {
-                            errors.bpMeasurementDate = "Required"
-                          }
-                          if (!values.bpLeftSystolic1) {
-                            errors.bpLeftSystolic1 = "Required"
-                          }
-                          if (!values.bpLeftDiSystolic1) {
-                            errors.bpLeftDiSystolic1 = "Required"
-                          }
-                          if (!values.bpLeftSystolic2) {
-                            errors.bpLeftSystolic2 = "Required"
-                          }
-                          if (!values.bpLeftDiSystolic2) {
-                            errors.bpLeftDiSystolic2 = "Required"
-                          }
-                          if (!values.bpRightSystolic1) {
-                            errors.bpRightSystolic1 = "Required"
-                          }
-                          if (!values.bpRightDiSystolic1) {
-                            errors.bpRightDiSystolic1 = "Required"
-                          }
-                          if (!values.bpRightSystolic2) {
-                            errors.bpRightSystolic2 = "Required"
-                          }
-                          if (!values.bpRightDiSystolic2) {
-                            errors.bpRightDiSystolic2 = "Required"
-                          }
-                        } else if (values.bpOrMap == "MAP") {
-                          if (!values.mapReading1) {
-                            errors.mapReading1 = "Required"
-                          }
-                          if (!values.mapReading2) {
-                            errors.mapReading2 = "Required"
-                          }
-                        }
-
-                      }
-
-
-                      if (!values.familyHistoryPreEclampsia) {
-                        errors.familyHistoryPreEclampsia = "Required"
-                      }
-                      if (!values.chronicHypertension) {
-                        errors.chronicHypertension = "Required"
-                      }
-                      if (!values.uterineArteryPulsativeIndexRightPI) {
-                        errors.uterineArteryPulsativeIndexRightPI = "Required"
-                      }
-                      if (!values.uterineArteryPulsativeIndexLeftPI) {
-                        errors.uterineArteryPulsativeIndexLeftPI = "Required"
-                      }
-                    }
-
-                  }
-
-                }
-
 
                 console.log("ERRORRRS", errors)
                 return errors;
@@ -2519,7 +1351,10 @@ const ClinicalHistory = (props) => {
                 console.log(values)
               }}
             >
-              {({ values, handleChange, handleBlur, setValues, errors, setFieldValue }) => (
+
+
+
+              {({ values }) => (
 
                 <Form className="mb-2">
                   {
@@ -2542,113 +1377,38 @@ const ClinicalHistory = (props) => {
                       </div>
                     </>
                   }
-
                   <div className="customWrap">
                     <div className="row">
+
                       {
-                        !hasNbs && <>
-
-                          <DateFieldComponent
-                            name="sampleCollectionDate"
-                            title="Sample Collection Date"
-                            max={moment().format("YYYY-MM-DD")}
-                            mandatory={true}
-                          />
-
-                          {!hasCyto &&
-                            <DateFieldComponent
-                              name="usgDate"
-                              title="USG Date"
-                              max={moment().format("YYYY-MM-DD")}
-                              mandatory={true}
-                            />
-                          }
-
-
-
-
-
-                          <div className="col-12 form-group">
+                        (hasNipt) && <>
+                          <div className="form-group col-6">
                             <label>
-                              {hasCyto ? "Gestational Age as of Sample Collection date" : "Gestational Age as of Scan Date"}<span className="marked">*</span>
+                              Referral reason :
+                              <span className="marked">*</span>
                             </label>
-                            <div className="row">
-                              <NumberField
-                                name="gestationalAgeWeeks"
-                                placeholder="Enter Gestational Age Weeks"
-                                title="Weeks"
-                                mandatory={true}
-                              />
-                              <NumberField
-                                name="gestationalAgeDays"
-                                placeholder="Enter Gestational Age Days"
-                                title="Days"
-                                mandatory={true}
-                              />
-                            </div>
+                            <Select
+                              isMulti={true}
+                              options={referralReasonList}
+                              onChange={handleReferralDoctorReasonChange}
+                              value={referralReason}
+                              name="referralReason"
+                            />
+                            <ErrorMessage
+                              name="referralReason"
+                              component="div"
+                              className="formErr"
+                            />
                           </div>
-                          {!hasCyto && <>
-
-                            <div className="col-12 form-group">
-                              <label>
-                                Current Gestational Age <span className="marked">*</span>
-                              </label>
-                              <div className="row">
-                                <div className="col-6">
-                                  <label>
-                                    Weeks <span className="marked">*</span>:{" "}
-                                  </label>
-                                  <Field
-                                    value={currentGestWeeks}
-                                    onKeyDown={(e) => ["e", "E", "+", "-"].includes(e.key) && e.preventDefault()}
-                                    type="number"
-                                    name="currentGestationalAgeWeeks"
-                                    className="form-control"
-                                    disabled={true}
-                                  />
-                                  {
-                                    errors.currentGestationalAgeWeeks &&
-                                    <div className="formErr">{errors.currentGestationalAgeWeeks} </div>
-                                  }
-                                  <ErrorMessage
-                                    name="currentGestationalAgeWeeks"
-                                    component="div"
-                                    className="formErr"
-                                  />
-                                </div>
-                                <div className="col-6">
-                                  <label>
-                                    Days <span className="marked">*</span>:{" "}
-                                  </label>
-                                  <Field
-                                    value={currentGestDays}
-                                    onKeyDown={(e) => ["e", "E", "+", "-"].includes(e.key) && e.preventDefault()}
-                                    type="number"
-                                    name="currentGestationalAgeDays"
-                                    className="form-control"
-                                    disabled={true}
-                                  />
-                                  <ErrorMessage
-                                    name="currentGestationalAgeDays"
-                                    component="div"
-                                    className="formErr"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          </>}
-
-
-                          {/* END */}
                         </>
                       }
-                      <div className="form-group col-sm-12 col-md-6 col-xs-12">
+                    </div>
+                    <div className="row">
 
+                      <div className="form-group col-6" >
                         <label>
-                          Referring Doctor: {hasCyto && <span className="marked">*</span>}
+                          Referring Doctor: {(hasCyto || hasNbs) && <span className="marked">*</span>}
                         </label>
-
-
                         <AsyncSelect
                           isClearable
                           cacheOptions
@@ -2668,9 +1428,11 @@ const ClinicalHistory = (props) => {
                         }
 
                       </div>
+                    </div>
+                    <div className="row">
                       {
                         isGyno &&
-                        <div className="form-group col-sm-12 col-md-6 col-xs-12">
+                        <div className="form-group col-6">
                           <label>
                             Sonographer: {!hasCyto && <span className="marked">*</span>}
                           </label>
@@ -2692,347 +1454,25 @@ const ClinicalHistory = (props) => {
                         </div>
                       }
 
-
-
-                      {
-                        hasNbs && <>
-                          <div className="row">
-                            <DateFieldComponent
-                              name="sampleCollectionDate"
-                              title="Sample Collection Date"
-                              max={moment().format("YYYY-MM-DD")}
-                              mandatory={true}
-                            />
-                            <DateFieldComponent
-                              name="firstFeedingDate"
-                              title=" Date of 1st Feeding "
-                              max={moment().format("YYYY-MM-DD")}
-                              mandatory={true}
-                            />
-
-                            <div className="col-md-6 col-12">
-                              <div className="form-group">
-                                <label>
-                                  Type Of Feeding <span className="marked">*</span>
-                                </label>
-
-
-                                <MySelect
-                                  isMulti={false}
-                                  optionList={typeOfFeeding}
-                                  name="typeOfFeeding"
-                                  isDisabled={false}
-
-                                />
-                                <ErrorMessage
-                                  name="typeOfFeeding"
-                                  component="div"
-                                  className="formErr"
-                                />
-
-                              </div>
-
-                            </div>
-                            <div className="col-12 col-md-6 form-group">
-                              <RadioField
-                                name="hoTransfusion"
-                                title="H/O Transfusion"
-                                mandatory={true}
-                                options={[{ value: "Yes", label: "Yes" },
-                                { value: "No", label: "No" }
-                                ]}
-                              />
-
-                            </div>
-                            {
-                              values.hoTransfusion == "Yes" && <>
-                                <DateFieldComponent
-                                  name="dateOfHoTransfusion"
-                                  title={"Date of H/O Transfusion"}
-                                  max={moment().format("YYYY-MM-DD")}
-                                  mandatory={true}
-                                />
-
-                              </>
-                            }
-                            <div className="col-md-6 col-12">
-                              <div className="form-group">
-                                <label>
-                                  Delivery Status <span className="marked">*</span>
-                                </label>
-
-
-                                <MySelect
-                                  isMulti={false}
-                                  optionList={deliveryStatus}
-                                  name="deliveryStatus"
-                                  isDisabled={false}
-
-                                />
-                                <ErrorMessage
-                                  name="deliveryStatus"
-                                  component="div"
-                                  className="formErr"
-                                />
-
-                              </div>
-
-                            </div>
-                            <TextField
-                              title="Additional,Symptoms/History"
-                              name="additionalSymptoms"
-                              placeholder="Enter Genetic Disease in Mother"
-                              mandatory={true}
-                            />
-
-                          </div>
-
-
-                        </>
-                      }
-
-                      {hasCyto && (
-
-                        <>
-
-                          {hasCytoPrenatal && (
-                            <>
-                              <NumberField
-                                title="Maternal Age"
-                                name="maternalAge"
-                                placeholder="Enter Maternal Age (in yrs)"
-                                mandatory={true}
-                                min="1"
-                                max="100"
-                              />
-                              <TextField
-                                title="Genetic Disease in Mother"
-                                name="motherGeneticDisease"
-                                placeholder="Enter Genetic Disease in Mother"
-                                mandatory={true}
-                              />
-                              <TextField
-                                title="Genetic Disease in Mother"
-                                name="fatherGeneticDisease"
-                                placeholder="Enter Genetic Disease in Father"
-                                mandatory={true}
-                              />
-                              <TextField
-                                title=" Genetic Disease in Sibling"
-                                name="siblingGeneticDisease"
-                                mandatory={true}
-                                placeholder="Enter Genetic Disease in Sibling"
-
-                              />
-
-                            </>
-                          )}
-                          {
-                            (hasPoc || hasCytoPrenatal) &&
-                            <RadioField
-                              name="consanguinity"
-                              title="Consanguinity"
-                              mandatory={true}
-                              options={[{ value: "Yes", label: "Yes" },
-                              { value: "No", label: "No" }
-                              ]}
-                            />
-                            // <div className="col-12 col-md-6 form-group">
-                            //   <label className="mb-2">
-                            //     Consanguinity {" "}
-                            //     <span className="marked">*</span>
-                            //   </label>
-                            //   <br />
-                            //   <div className="pretty p-default p-round">
-                            //     <Field
-                            //       type="radio"
-                            //       name="consanguinity"
-                            //       value="Yes"
-                            //     />
-                            //     <div className="state">
-                            //       <label>Yes</label>
-                            //     </div>
-                            //   </div>
-                            //   <div className="pretty p-default p-round">
-                            //     <Field
-                            //       type="radio"
-                            //       name="consanguinity"
-                            //       value="No"
-                            //     />
-                            //     <div className="state">
-                            //       <label>No</label>
-                            //     </div>
-                            //   </div>
-                            //   <ErrorMessage
-                            //       name="consanguinity"
-                            //       component="div"
-                            //       className="formErr"
-                            //     />
-                            //   </div>
-                          }
-                          {/* <TextField
-                              title=" Family History of any chromosomal abnormality"
-                              name="familyHistory"
-                              placeholder="Enter Family History of any chromosomal abnormality"
-                              mandatory={true}
-                              /> */}
-
-                        </>
-                      )}
-                      {/* @#@#@#@#####################################@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@2 */}
-                      {
-                        (hasNipt) && <>
-
-                          {/* <div className="row"> */}
-
-                          <div className="form-group col-sm-12 col-md-12 col-xs-12">
-                            <label>
-                              Referral reason :
-
-                              <span className="marked">*</span>
-                            </label>
-                            <Select
-                              isMulti={true}
-
-                              options={referralReasonList}
-                              onChange={handleReferralDoctorReasonChange}
-                              value={referralReason}
-                              name="referralReason"
-                            />
-                            {/* <MySelect
-                  isMulti={true}
-                  optionList={referralReasonList}
-                  name="referralReason"
-                  isDisabled={false}
-                    
-                  /> */}
-
-
-                            <ErrorMessage
-                              name="referralReason"
-                              component="div"
-                              className="formErr"
-                            />
-                          </div>
-
-
-
-                        </>
-                      }
                     </div>
-                    {
-                      hasCyto && <>
-                        <div className="row">
-
-                          <div id="checkbox-group">Referral Reason</div>
-                        </div>
-
-                        <div role="group" aria-labelledby="checkbox-group">
-                          <div className="row">
-                            <div className="col-sm">
-                              <label style={{ paddingTop: "30px" }}>
-                                <Field type="checkbox" name="referralReason" value="Advance Maternal Age" />
-                                Advance Maternal Age
-                              </label>
-
-                            </div>
-                            {
-                              values.referralReason.includes("Advance Maternal Age") &&
-
-                              <TextField
-                                title=""
-                                name="advanceMaternalAge"
-
-                              />
-
-                            }
-
-                          </div>
-                          <div className="row">
-                            <div className="col-sm">
-                              <label style={{ paddingTop: "30px" }}>
-                                <Field type="checkbox" name="referralReason" value="Genetic Disease in Father/Mother/Sibling" />
-                                Genetic Disease in Father/Mother/Sibling
-                              </label>
-                            </div>
-                            {
-                              values.referralReason.includes("Genetic Disease in Father/Mother/Sibling") &&
-                              <TextField
-                                title=""
-                                name="geneticDiseaseInFMS"
-                              />
-                            }
-                          </div>
-                          <div className="row">
-                            <div className="col-sm">
-                              <label style={{ paddingTop: "30px" }}>
-
-                                <Field type="checkbox" name="referralReason" value="Consanguinity" />
-                                Consanguinity
-                              </label>
-
-                            </div>
-                            {
-                              values.referralReason.includes("Consanguinity") &&
-                              <RadioField
-                                name="consanguinity"
-
-                                options={[{ value: "Yes", label: "Yes" },
-                                { value: "No", label: "No" }
-                                ]}
-                              />
-                            }
-                          </div>
-                          <div className="row">
-                            <div className="col-sm">
-                              <label style={{ paddingTop: "30px" }}>
-                                <Field type="checkbox" name="referralReason" value="Family History of any chromosomal abnormality" />
-                                Family History of any chromosomal abnormality
-                              </label>
-
-                            </div>
-                            {
-                              values.referralReason.includes("Family History of any chromosomal abnormality") &&
-
-                              <TextField
-                                title=""
-                                name="familyHistory"
-
-                              />
-
-                            }
-
-                          </div>
-                          <div className="row">
-                            <div className="col-sm">
-                              <label style={{ paddingTop: "30px" }}>
-
-                                <Field type="checkbox" name="referralReason" value="Others" />
-                                Others
-                              </label>
-
-                            </div>
-                            {
-                              values.referralReason.includes("Others") &&
-                              <TextField
-                                title=""
-                                name="Others"
-                              />
-                            }
-                          </div>
-                          <ErrorMessage
-                            name="referralReason"
-                            component="div"
-                            className="formErr"
-                          />
-
-                        </div>
-
-                      </>
-                    }
                     <div className="row">
-                      {(hasNipt) && (
+
+
+                      {(flowFields.length > 0) &&
                         <>
+
+
+                          {
+
+                            flowFields.map((field, id) => <CreateField {...field} values={props.formDataRedux.patient_details
+                              ? { ...values, ...props.formDataRedux.patient_details }
+                              : { ...values, }} externalValidation={{ testType: hasPreEclampsiaTest ? "preEclampsia" : hasCytoPrenatal ? "cytoPrenatal" : "", testTrimester }} />)
+                          }
+                        </>
+
+                      }
+                      {
+                        hasNipt && <>
                           {
                             referralReason &&
                             referralReason.map((reason) =>
@@ -3111,802 +1551,126 @@ const ClinicalHistory = (props) => {
 
 
                             )}
-                          <RadioField
-                            name="presentPregnancy"
-                            title="Present pregnancy"
-                            mandatory={true}
-                            options={[{ value: "Singleton", label: "Singleton" },
-                            { value: "Twins", label: "Twins" },
-                            { value: "Vanishing Twin", label: "Vanishing Twin" }
-                            ]}
-                          />
-
                         </>
-                      )}
-                      {(hasNipt || hasPns) && (
-                        <>
-                          {
-                            hasPns &&
-                            <TextField
-                              title="FMF Id"
-                              name="fmfId"
-                              placeholder=""
-                              mandatory={false}
-                            />
-                          }
-                          {hasNipt && values.presentPregnancy == "Twins" && <>
-                            <RadioField
-                              name="twinType"
-                              title="Twin type"
-                              mandatory={true}
-                              options={[{ value: "Dichorionic", label: "Dichorionic" },
-                              { value: "Monochorionic", label: "Monochorionic" }
-                              ]}
-                            />
+                      }
+                      {
+                        hasCyto && <>
+                          <div className="col-12">
 
 
-                            {
-                              values.twinType == "Dichorionic" && <>
+                            <div className="row ml-2">
 
-                              </>
-                            }
-                            {values.twinType == "Monochorionic" &&
-                              <>
-                                <RadioField
-                                  name="monochorionicType"
-                                  title="Monochorionic Type"
-                                  mandatory={true}
-                                  options={[{ value: "MCDA", label: "MCDA" },
-                                  { value: "MCMA", label: "MCMA" }
-                                  ]}
-                                />
-                              </>
-                            }
-                          </>
-                          }
-
-                          <NumberField
-                            title="Gravida Value"
-                            name="Gravida"
-                          />
-                          <NumberField
-                            title="Para Value"
-                            name="Para"
-                            disabled={!values.Gravida}
-                          />
-                          <NumberField
-                            title="Abortion Value"
-                            name="Abortion"
-                          />
-                          <NumberField
-                            title="Live Value"
-                            name="Live"
-                            disabled={!values.Gravida}
-
-                          />
-                          {/* {
-                            ["Gravida","Para","Abortion","Live"].map((data) => {
-                              return (<>
-                               <NumberField 
-                                title={`${data} Value`}
-                                name={data}
-                               
-                              />
-                              </>
-                              )
-                            })
-                            
-                          } */}
-
-                        </>
-                      )}
-
-                      {hasNipt && (
-                        <>
-                          {values.presentPregnancy == "Twins" && (
-                            <div className="col-12">
-                              <div className="form-group">
-                                <label>
-                                  Sex Chromosome Aneuploidies will not be reported
-                                  for twin cases
-                                </label>
-                              </div>
+                              <div id="checkbox-group">Referral Reason</div>
                             </div>
-                          )}
 
-                          {values.presentPregnancy == "Vanishing Twin" && (
-                            <DateFieldComponent
-                              name="dateOfTwinVanishOrReduced"
-                              title=" Date on which the other twin had vanished/ reduced"
-                              max={moment().subtract(28, 'days').format('yyyy-MM-DD')}
-                              mandatory={true}
-                            />
+                            <div role="group" aria-labelledby="checkbox-group">
+                              <div className="row">
+                                <div className="col-6">
+                                  <label style={{ paddingTop: "30px", display: "flex" }}>
+                                    <Field type="checkbox" name="referralReason" value="Advance Maternal Age" />
+                                    <label className="pl-2"> Advance Maternal Age </label>
+                                  </label>
 
-                          )}
-
-                          <RadioField
-                            name="ivfPregnancy"
-                            title="IVF Pregnancy"
-                            mandatory={true}
-                            options={[{ value: "Yes", label: "Yes" },
-                            { value: "No", label: "No" }
-                            ]}
-                          />
-
-
-
-                          {values.ivfPregnancy == "Yes" && (
-                            <>
-                              <RadioField
-                                name="eggUsed"
-                                title=" Egg used"
-                                mandatory={true}
-                                options={[{ value: "Self", label: "Self" },
-                                { value: "Donor", label: "Donor" }
-                                ]}
-                              />
-
-                              <NumberField
-                                title="Age at egg retrieval"
-                                name="ageAtEggRetrieval"
-                                placeholder="Enter Age at Egg Retrieval in years"
-                                mandatory={true}
-                                min="1"
-                                max="100"
-                              />
-
-
-
-                            </>
-                          )}
-
-                          <RadioField
-                            name="surrogate"
-                            title="Surrogate"
-                            mandatory={true}
-                            options={[{ value: "Yes", label: "Yes" },
-                            { value: "No", label: "No" }
-                            ]}
-                          />
-                          <RadioField
-                            name="previousPregnancy"
-                            title="Previous pregnancy ?"
-                            mandatory={true}
-                            options={[{ value: "Yes", label: "Yes" },
-                            { value: "No", label: "No" }
-                            ]}
-                          />
-
-                          {values.previousPregnancy == "Yes" &&
-                            <>
-                              <DateFieldComponent
-                                name="prevPregDate"
-                                title=" Date of Last Delivery/abortion"
-                                mandatory={true}
-                                max={moment().format("YYYY-MM-DD")}
-                              />
-                              <RadioField
-                                name="spontaneousAbortion"
-                                title=" Spontaneous Abortion ?"
-                                mandatory={true}
-                                options={[{ value: "Yes", label: "Yes" },
-                                { value: "No", label: "No" }
-                                ]}
-                              />
-                              <RadioField
-                                name="terminationPregnancy"
-                                title="  Termination of pregnancies ? "
-                                mandatory={true}
-                                options={[{ value: "Yes", label: "Yes" },
-                                { value: "No", label: "No" }
-                                ]}
-                              />
-                            </>
-
-                          }
-                        </>
-                      )}
-
-
-                      {hasPns && (
-                        <>
-                          <DateFieldComponent
-                            name="lmpDate"
-                            title="LMP"
-                            max={moment().format('yyyy-MM-DD')}
-                            mandatory={true}
-                          />
-                          <DateFieldComponent
-                            name="usgCorrEddDate"
-                            title="USG/Corr EDD"
-                            min={values.sampleCollectionDate}
-                            mandatory={true}
-                          />
-
-                          <RadioField
-                            name="lmpCertainity"
-                            title="LMP Certainity "
-                            options={[{ value: "Regular", label: "Regular" },
-                            { value: "Irregular", label: "Irregular" },
-                            { value: "Unknown", label: "Unknown" }
-                            ]}
-                          />
-                          <RadioField
-                            name="historyOfDownSyndrome"
-                            title="History of Down Syndrome"
-                            mandatory={true}
-                            options={[{ value: "Yes", label: "Yes" },
-                            { value: "No", label: "No" },
-                            ]}
-                          />
-                          {
-                            values.historyOfDownSyndrome == "Yes" &&
-                            <RadioField
-                              name="confirmatoryTestHDS"
-                              title="Confirmatory Test for Down Syndrom?"
-                              mandatory={true}
-                              options={[{ value: "Yes", label: "Yes" },
-                              { value: "No", label: "No" },
-                              ]}
-                            />
-
-                          }
-                          {
-                            (values.historyOfDownSyndrome == "Yes" &&
-                              values.confirmatoryTestHDS == "No"
-                            )
-                            &&
-                            <div className="col-sm">
-                              <label>
-                                We will not consider previous history of down syndrome for risk accessment
-                              </label>
-                            </div>
-                          }
-
-                          <RadioField
-                            name="historyOfEdwardsSyndrome"
-                            title="History of Edward's Syndrome
-                              ONTD "
-                            mandatory={true}
-                            options={[{ value: "Yes", label: "Yes" },
-                            { value: "No", label: "No" },
-                            ]}
-                          />
-                          {
-                            values.historyOfEdwardsSyndrome == "Yes" &&
-                            <RadioField
-                              name="confirmatoryTestHES"
-                              title="Confirmatory Test for Edward's Syndrom?"
-                              mandatory={true}
-                              options={[{ value: "Yes", label: "Yes" },
-                              { value: "No", label: "No" },
-                              ]}
-                            />
-
-                          }
-                          {(values.historyOfEdwardsSyndrome == "Yes" &&
-                            values.confirmatoryTestHES == "No") &&
-                            <div className="col-sm">
-                              <label>
-                                We will not consider previous history of Edward's syndrome for risk accessment
-                              </label>
-                            </div>
-                          }
-
-
-
-
-
-                          <RadioField
-                            name="historyOfPatauSyndrome"
-                            title="History of  Patau Syndrome
-                              ONTD "
-                            mandatory={true}
-                            options={[{ value: "Yes", label: "Yes" },
-                            { value: "No", label: "No" },
-                            ]}
-                          />
-
-                          {
-                            values.historyOfPatauSyndrome == "Yes" &&
-                            <RadioField
-                              name="confirmatoryTestHPS"
-                              title="Confirmatory Test for Patau's Syndrom?"
-                              mandatory={true}
-                              options={[{ value: "Yes", label: "Yes" },
-                              { value: "No", label: "No" },
-                              ]}
-                            />
-
-                          }
-                          {
-                            (values.historyOfPatauSyndrome == "Yes" &&
-                              values.confirmatoryTestHPS == "No")
-                            &&
-                            <div className="col-sm">
-                              <label>
-                                We will not consider previous history of Patau's syndrome for risk accessment
-                              </label>
-                            </div>
-                          }
-
-
-
-                          <RadioField
-                            name="diabetesInsulinDependent"
-                            title=" Diabetes Status (Insulin Dependent) "
-                            mandatory={true}
-                            options={[{ value: "Yes", label: "Yes" },
-                            { value: "No", label: "No" },
-                            ]}
-                          />
-
-                          {values.diabetesInsulinDependent == "Yes" && (
-                            <>
-                              {/* <DateFieldComponent 
-                              name="insulinDate"
-                              title="Last date of insulin taken"
-                              max={moment().format("YYYY-MM-DD")}
-                              mandatory={true}
-                            /> */}
-                              <RadioField
-                                name="timeOfDiabetes"
-                                title="Time of Diabetes"
-                                mandatory={true}
-                                options={[{
-                                  value: "Pre-Diabetic(Insulin started before pregnancy",
-                                  label: "Pre-Diabetic(Insulin started before pregnancy"
-                                },
+                                </div>
                                 {
-                                  value: "Gestational Diabetes(Insulin started after pregnancy)",
-                                  label: "Gestational Diabetes(Insulin started after pregnancy)"
+                                  values.referralReason.includes("Advance Maternal Age") &&
+
+                                  <TextField
+                                    title=""
+                                    name="advanceMaternalAge"
+
+                                  />
+
                                 }
-                                ]}
-                              />
-                              <RadioField
-                                name="gestational"
-                                title=" Gestational"
-                                mandatory={true}
-                                options={[{ value: "Yes", label: "Yes" },
-                                { value: "No", label: "No" }
-                                ]}
-                              />
-                            </>
-                          )}
-                          <RadioField
-                            name="patientOnHcg"
-                            title=" Patient on HCG"
-                            mandatory={true}
-                            options={[{ value: "Yes", label: "Yes" },
-                            { value: "No", label: "No" }
-                            ]}
-                          />
 
-                          {values.patientOnHcg == "Yes" && (
-                            //    <DateFieldComponent 
-                            //    name="hcgIntakeDate"
-                            //    title="Last date of HCG intake"
-                            //    max={moment().format("YYYY-MM-DD")}
-                            //    mandatory={true}
-                            //  />
-                            <div className="col-sm">
+                              </div>
+                              <div className="row">
+                                <div className="col-6">
+                                  <label style={{ paddingTop: "30px", display: "flex" }}>
+                                    <Field type="checkbox" name="referralReason" value="Genetic Disease in Father/Mother/Sibling" />
+                                    <label className="pl-2"> Genetic Disease in Father/Mother/Sibling </label>
+                                  </label>
+                                </div>
+                                {
+                                  values.referralReason.includes("Genetic Disease in Father/Mother/Sibling") &&
+                                  <TextField
+                                    title=""
+                                    name="geneticDiseaseInFMS"
+                                  />
+                                }
+                              </div>
+                              <div className="row">
+                                <div className="col-6">
+                                  <label style={{ paddingTop: "30px", display: "flex" }}>
 
-                              <label>
-                                Sample should be collected after 48-72 hours of last hCG injection. If hCG injection is already administered, wait for 48-72 hours before withdrawing blood for test.
-                              </label>
+                                    <Field type="checkbox" name="referralReason" value="Consanguinity" />
+                                    <label className="pl-2"> Consanguinity </label>
+                                  </label>
+
+                                </div>
+                                {
+                                  values.referralReason.includes("Consanguinity") &&
+                                  <RadioField
+                                    name="consanguinity"
+
+                                    options={[{ value: "Yes", label: "Yes" },
+                                    { value: "No", label: "No" }
+                                    ]}
+                                  />
+                                }
+                              </div>
+                              <div className="row">
+                                <div className="col-6">
+                                  <label style={{ paddingTop: "30px", display: "flex" }}>
+                                    <Field type="checkbox" name="referralReason" value="Family History of any chromosomal abnormality" />
+                                    <label className="pl-2">
+                                      Family History of any chromosomal abnormality
+                                    </label>
+                                  </label>
+
+                                </div>
+                                {
+                                  values.referralReason.includes("Family History of any chromosomal abnormality") &&
+
+                                  <TextField
+                                    title=""
+                                    name="familyHistory"
+
+                                  />
+
+                                }
+
+                              </div>
+                              <div className="row">
+                                <div className="col-6">
+                                  <label style={{ paddingTop: "30px", display: "flex" }}>
+
+                                    <Field type="checkbox" name="referralReason" value="Others" />
+                                    <label className="pl-2">
+                                      Others
+                                    </label>
+                                  </label>
+
+                                </div>
+                                {
+                                  values.referralReason.includes("Others") &&
+                                  <TextField
+                                    title=""
+                                    name="Others"
+                                  />
+                                }
+                              </div>
+                              <ErrorMessage
+                                name="referralReason"
+                                component="div"
+                                className="formErr"
+                              />
+
                             </div>
-
-                          )}
-                          <RadioField
-                            name="bleedingOrSpottingTwoWeeks"
-                            title="Bleeding/Spotting in last two weeks"
-                            mandatory={true}
-                            options={[{ value: "Yes", label: "Yes" },
-                            { value: "No", label: "No" }
-                            ]}
-                          />
-                          <RadioField
-                            name="typeOfConception"
-                            title=" Type of conception"
-                            mandatory={true}
-                            options={[{ value: "Natural", label: "Natural" },
-                            { value: "Assisted", label: "Assisted" },
-                            { value: "Ovulation drugs", label: "Ovulation drugs" }
-                              , { value: "IUI", label: "IUI" }
-                            ]}
-                          />
-                          <RadioField
-                            name="presentPregnancy"
-                            title=" Present pregnancy"
-                            mandatory={true}
-                            options={[{ value: "Singleton", label: "Singleton" },
-                            { value: "Twins", label: "Twins" },
-                            { value: "Ovulation drugs", label: "Ovulation drugs" }
-                            ]}
-                          />
-                          {/*~~~~~~~~~~~~~~~~~~ EDITING!~~~~~~~~~~~~~~~~~~~~~~~~~ */}
-                          {
-                            console.log("presentPregnancy", values.presentPregnancy)
-                          }
-                          {values.presentPregnancy == "Twins" && <>
-                            {
-                              console.log("presentPregnancy", values.presentPregnancy)
-                            }
-                            <RadioField
-                              name="twinType"
-                              title=" Twin type "
-                              mandatory={true}
-                              options={[{ value: "Dichorionic", label: "Dichorionic" },
-                              { value: "Monochorionic", label: "Monochorionic" },
-                              ]}
-                            />
-
-
-                            {values.twinType == "Monochorionic" &&
-                              <>
-                                <RadioField
-                                  name="monochorionicType"
-                                  title="  Monochorionic Type"
-                                  mandatory={true}
-                                  options={[{ value: "MCMA", label: "MCMA" },
-                                  { value: "MCDA", label: "MCDA" }
-                                  ]}
-                                />
-                              </>
-                            }
-                          </>
-                          }
-
-                          {/* ~~~~~~~~~~~EDITING CLOSE~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */}
-                          {values.typeOfConception == "Assisted" && (
-                            <>
-                              <RadioField
-                                name="typeOfProcedure"
-                                title="Type of procedure"
-                                mandatory={true}
-                                options={[{ value: "Self IVF", label: "Self IVF" },
-                                { value: "Self ICSI", label: "Self ICSI" },
-                                { value: "Donor Egg", label: "Donor Egg" }
-                                ]}
-                              />
-
-                              <DateFieldComponent
-                                name="extractionDate"
-                                title="Extraction date"
-                                max={moment().format("YYYY-MM-DD")}
-                                mandatory={true}
-                              />
-                              <DateFieldComponent
-                                name="transferDate"
-                                title="Transfer date"
-                                max={moment().format("YYYY-MM-DD")}
-                                mandatory={true}
-                              />
-
-
-
-
-                              {values.typeOfProcedure == "Donor Egg" && (
-                                <DateFieldComponent
-                                  name="donorDob"
-                                  title="Donor DOB "
-                                  max={moment().subtract(18, "years").format("YYYY-MM-DD")}
-                                  mandatory={true}
-                                />
-                              )}
-                            </>
-                          )}
-
-
-
-                          {(testTrimester == "First" && values.presentPregnancy != "Twins") && (
-                            <>
-                              <NumberField
-                                title="  CRL (in mm) "
-                                name="crl"
-                                mandatory={true}
-                                min="1"
-                                max="100"
-                                step=".01"
-                              />
-                              <NumberField
-                                title="NT (in mm) "
-                                name="nt"
-                                mandatory={false}
-                                min="1"
-                                max="100"
-                                step=".01"
-                              />
-                              <RadioField
-                                name="nb"
-                                title=" NB"
-                                mandatory={false}
-                                options={[{ value: "Present", label: "Present" },
-                                { value: "Absent", label: "Absent" }
-                                ]}
-                              />
-                            </>
-                          )}
-
-                          {values.presentPregnancy == "Twins" && (
-                            <>
-                              <NumberField
-                                title=" Twin-1: CRL (in mm)"
-                                name="twinCrl1"
-                                mandatory={true}
-                                min="1"
-                                max="100"
-                                step=".01"
-
-                              />
-                              <NumberField
-                                title=" Twin-2: CRL (in mm)"
-                                name="twinCrl2"
-                                mandatory={true}
-                                min="1"
-                                max="100"
-                                step=".01"
-
-                              />
-                              <NumberField
-                                title=" Twin-1: NT (in mm)"
-                                name="twinNt1"
-                                mandatory={false}
-                                min="1"
-                                max="100"
-                                step=".01"
-
-                              />
-                              <NumberField
-                                title="Twin-2: NT (in mm)"
-                                name="twinNt2"
-                                mandatory={false}
-                                min="1"
-                                max="100"
-                                step=".01"
-
-                              />
-                              <RadioField
-                                name="twinNb1"
-                                title="  Twin-1: NB "
-                                mandatory={false}
-                                options={[{ value: "Present", label: "Present" },
-                                { value: "Absent", label: "Absent" }
-                                ]}
-                              />
-                              <RadioField
-                                name="twinNb2"
-                                title=" Twin-2: NB "
-                                mandatory={false}
-                                options={[{ value: "Present", label: "Present" },
-                                { value: "Absent", label: "Absent" }
-                                ]}
-                              />
-                            </>
-                          )}
-
-                          {testTrimester == "Second" && (
-                            <>
-                              <NumberField
-                                title="BPD (in mm) "
-                                name="bpd"
-                                mandatory={false}
-                                min="1"
-                                max="100"
-                              />
-                              <NumberField
-                                title="FL (in mm)"
-                                name="fl"
-                                mandatory={false}
-                                min="1"
-                                max="100"
-                              />
-                              <NumberField
-                                title="  HC (in mm) "
-                                name="hc"
-                                mandatory={false}
-                                min="1"
-                                max="100"
-                              />
-
-                              <NumberField
-                                title=" CRL (in mm) "
-                                name="crl"
-                                mandatory={false}
-                                min="1"
-                                max="100"
-                                step=".01"
-                              />
-
-                              <div className="row mb-2" style={{ width: "100%", display: "block", marginLeft: "31%" }}>
-
-                                <ErrorMessage
-                                  name="fl"
-                                  component="label"
-                                  className="formErr"
-                                />
-                              </div>
-                              <div className="form-group col-12 col-md-12" >
-                                <hr></hr>
-                              </div>
-                            </>
-
-                          )}
-
-                          {hasPreEclampsiaTest &&
-                            <>
-                              <RadioField
-                                name="bpOrMap"
-                                title="BP or MAP"
-                                mandatory={true}
-                                options={[{ value: "BP", label: "BP" },
-                                { value: "MAP", label: "MAP" }
-                                ]}
-                              />
-                              {
-                                values.bpOrMap == "BP" &&
-                                <>
-                                  <DateFieldComponent
-                                    name="bpMeasurementDate"
-                                    title=" BP Measurement Date<"
-                                    mandatory={true}
-                                    max={moment().format("YYYY-MM-DD")}
-                                  />
-                                  <NumberField
-                                    title="BP Left Arm - Systolic Reading 1 "
-                                    name="bpLeftSystolic1"
-                                    mandatory={true}
-                                    min="1"
-                                    max="100"
-                                  />
-                                  <NumberField
-                                    title="BP Left Arm - Diastolic Reading 1 "
-                                    name="bpLeftDiSystolic1"
-                                    mandatory={true}
-                                    min="1"
-                                    max="100"
-                                  />
-                                  <NumberField
-                                    title="BP Left Arm - Systolic Reading 2  "
-                                    name="bpLeftSystolic2"
-                                    mandatory={true}
-                                    min="1"
-                                    max="100"
-                                  />
-                                  <NumberField
-                                    title=" BP Left Arm - Diastolic Reading 2 "
-                                    name="bpLeftDiSystolic2"
-                                    mandatory={true}
-                                    min="1"
-                                    max="100"
-                                  />
-                                  <NumberField
-                                    title="  BP Right Arm - Systolic Reading 1 "
-                                    name="bpRightSystolic1"
-                                    mandatory={true}
-                                    min="1"
-                                    max="100"
-                                  />
-
-                                  <NumberField
-                                    title=" BP Right Arm - Diastolic Reading 1 "
-                                    name="bpRightDiSystolic1"
-                                    mandatory={true}
-                                    min="1"
-                                    max="100"
-                                  />
-                                  <NumberField
-                                    title="BP Right Arm - Systolic Reading 2 "
-                                    name="bpRightSystolic2"
-                                    mandatory={true}
-                                    min="1"
-                                    max="100"
-                                  />
-
-                                  < NumberField
-                                    title=" BP Right Arm - Diastolic Reading 2 "
-                                    name="bpRightDiSystolic2"
-                                    mandatory={true}
-                                    min="1"
-                                    max="100"
-                                  />
-
-                                </>
-                              }
-                              {
-                                values.bpOrMap == "MAP" &&
-                                <>
-                                  < NumberField
-                                    title="MAP Reading-1"
-                                    name="mapReading1"
-                                    mandatory={true}
-                                    min="1"
-                                    max="100"
-                                  />
-                                  < NumberField
-                                    title="MAP Reading-2"
-                                    name="mapReading2"
-                                    mandatory={true}
-                                    min="1"
-                                    max="100"
-                                  />
-
-                                </>
-                              }
-
-
-
-
-                              <div className="form-group col-12 col-md-6">
-                                <label>
-                                  Family History of Pre-eclampsia <span className="marked">*</span>
-                                </label>
-                                <select
-                                  name="familyHistoryPreEclampsia"
-                                  value={values.familyHistoryPreEclampsia}
-                                  onChange={handleChange}
-                                  onBlur={handleBlur}
-                                  style={{ display: 'block' }}
-                                  className="form-control"
-                                >
-                                  <option value="" label="Select a Family History" />
-                                  <option value="Not Known" label="Not Known" />
-                                  <option value="Not Present" label="Not Present" />
-                                  <option value="Patient" label="Patient" />
-                                  <option value="Mother" label="Mother" />
-                                </select>
-                                <ErrorMessage
-                                  name="familyHistoryPreEclampsia"
-                                  component="div"
-                                  className="formErr"
-                                />
-                              </div>
-                              <div className="form-group col-12 col-md-6">
-                                <label>
-                                  Chronic Hypertension <span className="marked">*</span>
-                                </label>
-                                <select
-                                  name="chronicHypertension"
-                                  value={values.chronicHypertension}
-                                  onChange={handleChange}
-                                  onBlur={handleBlur}
-                                  style={{ display: 'block' }}
-                                  className="form-control"
-                                >
-                                  <option value="" label="Select a Chronic Hypertension" />
-                                  <option value="Not Known" label="Not Known" />
-                                  <option value="Not Present" label="Not Present" />
-                                  <option value="Medication" label="Medication" />
-                                  <option value="Untreated" label="Untreated" />
-                                </select>
-                                <ErrorMessage
-                                  name="chronicHypertension"
-                                  component="div"
-                                  className="formErr"
-                                />
-                              </div>
-                              <NumberField
-                                title="Uterine Artery Pulsative Index - Right PI"
-                                name="uterineArteryPulsativeIndexRightPI"
-                                mandatory={true}
-                                min="1"
-                                max="100"
-                              />
-                              <NumberField
-                                title=" Uterine Artery Pulsative Index - Left PI"
-                                name="uterineArteryPulsativeIndexLeftPI"
-                                mandatory={true}
-                                min="1"
-                                max="100"
-                              />
-                            </>
-                          }
-
-
-
-
+                          </div>
                         </>
-                      )}
+                      }
+
                       <>
                         <div className="col-12 col-md-12">
                           <label className="section-title">
@@ -3934,19 +1698,6 @@ const ClinicalHistory = (props) => {
                             />
                           )
                         }
-
-                        {/* {
-                        mandatoryFiles.map((data,id)=>
-                          <FileUploadDisplay 
-                          name={data.variable}
-                          ref={mandatoryFileReference[id]}
-                          // files={props.fileUpload[data.variable]}
-                          files={[]}
-                          fileButtonName={data.display}
-                          removeFile={""}
-                          />
-                        )
-                      } */}
                         {
                           props.fileUpload.filesToUpload.map((data, id) =>
                             <FileUploadDisplay
@@ -3975,9 +1726,14 @@ const ClinicalHistory = (props) => {
                           />
                         }
                         {
+                          values.historyOfDownSyndrome == "Yes" && values.confirmatoryTestHDS == "Yes" &&
+                          (!props.fileUpload.files.HDS || (props.fileUpload.files.HDS && props.fileUpload.files.HDS.length <= 0)) &&
+                          <label>Report will be needed for final Risk assessment</label>
+                        }
+                        {
                           values.historyOfEdwardsSyndrome == "Yes" && values.confirmatoryTestHES == "Yes" &&
                           <FileUploadDisplay
-                            name="HDS"
+                            name="HES"
                             ref={confirmatoryTestHESRef}
                             files={props.fileUpload.files.HES ?
                               props.fileUpload.files.HES : []
@@ -3987,9 +1743,14 @@ const ClinicalHistory = (props) => {
                           />
                         }
                         {
+                          values.historyOfEdwardsSyndrome == "Yes" && values.confirmatoryTestHES == "Yes" &&
+                          (!props.fileUpload.files.HES || (props.fileUpload.files.HES && props.fileUpload.files.HES.length <= 0)) &&
+                          <label>Report will be needed for final Risk assessment</label>
+                        }
+                        {
                           values.historyOfPatauSyndrome == "Yes" && values.confirmatoryTestHPS == "Yes" &&
                           <FileUploadDisplay
-                            name="HDS"
+                            name="HPS"
                             ref={confirmatoryTestHPSRef}
                             files={props.fileUpload.files.HPS ?
                               props.fileUpload.files.HPS : []
@@ -3998,20 +1759,15 @@ const ClinicalHistory = (props) => {
                             removeFile={onRemoveFile}
                           />
                         }
-
-
-
-
+                        {
+                          values.historyOfPatauSyndrome == "Yes" && values.confirmatoryTestHPS == "Yes" &&
+                          (!props.fileUpload.files.HPS || (props.fileUpload.files.HPS && props.fileUpload.files.HPS.length <= 0)) &&
+                          <label>Report will be needed for final Risk assessment</label>
+                        }
                       </>
-
-
-
                     </div>
                   </div>
 
-                  <hr></hr>
-                  <h4>Sample Info</h4>
-                  <hr></hr>
 
 
 
@@ -4180,11 +1936,16 @@ const ClinicalHistory = (props) => {
 
                 </Form>
               )}
+
+
             </Formik>
 
           </fieldset>
         </div>
       </div>
+      <hr></hr>
+      <h4>Sample Info</h4>
+      <hr></hr>
       {
         containers && testList.map((test, id) => (
           // testList.map((test, id) => (
@@ -4257,7 +2018,7 @@ const ClinicalHistory = (props) => {
                       <div className="row">
                         <div className="col-12 col-md-6 form-group">
                           <label>
-                            Sample Container Id <span className="marked">*</span>
+                            Sample Container Id<span className="marked">*</span>
                           </label>
                           <input
                             type="text"
@@ -4279,7 +2040,7 @@ const ClinicalHistory = (props) => {
 
                         <div className="col-8 col-md-4 form-group">
                           <label>
-                            Sample Container Type <span className="marked">*</span>
+                            Sample Container Type<span className="marked">*</span>
                           </label>
                           {/* <Select
 
@@ -4307,13 +2068,7 @@ const ClinicalHistory = (props) => {
                             </label>
                           }
 
-                          {/* <MySelect
-                          isMulti={false}
-                          isDisabled={false}
-                 
-                          optionList={test.container_type}
-                          name="sampleContainerType"
-                          /> */}
+
                           <ErrorMessage
                             name="sampleContainerType"
                             component="div"
@@ -4382,7 +2137,7 @@ const ClinicalHistory = (props) => {
                           </div>
                           <div className="row">
                             <div className="col-md-6 col-12">
-                              <div className="form-group">
+                              <div className="form-group" style={{ display: "flex" }}>
                                 <Field ref={instituteLocationRef[id]} type="checkbox" name="instituteLocation" value="yes" />
                                 <label className="mb-3 ml-3">
                                   Sample pickup location is same as institute location <span className="marked">*</span>
@@ -4407,13 +2162,13 @@ const ClinicalHistory = (props) => {
                               name="address"
                               mandatory={true}
                               component="textarea"
-                              disabled={values.instituteLocation == "yes" ? true : false}
+                              isDisabled={values.instituteLocation == "yes" ? true : false}
                             />
                             <TextField
                               title="Pin Code"
                               name="pinCode"
                               mandatory={true}
-                              disabled={values.instituteLocation == "yes" ? true : false}
+                              isDisabled={values.instituteLocation == "yes" ? true : false}
                             />
 
                             <div className="col-md-6 col-12">
@@ -4538,7 +2293,10 @@ const ClinicalHistory = (props) => {
             <button
               type="submit"
               className="btn btn-primary"
-              onClick={finalSubmit}
+              onClick={e => {
+                firstFormikRef.current.validateForm()
+                finalSubmit()
+              }}
             >
               Next
             </button>

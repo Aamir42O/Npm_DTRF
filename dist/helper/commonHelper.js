@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.MousePopover = exports.warningMessage = exports.infoMessage = exports.successMessage = exports.errorMessage = void 0;
+exports.MousePopover = exports.warningMessage = exports.infoMessage = exports.successMessage = exports.hasValue = exports.errorMessage = void 0;
 
 var _antd = require("antd");
 
@@ -18,6 +18,16 @@ const errorMessage = msg => {
 };
 
 exports.errorMessage = errorMessage;
+
+const hasValue = data => {
+  if (["", null, false, undefined].includes(data)) {
+    return false;
+  } else {
+    return true;
+  }
+};
+
+exports.hasValue = hasValue;
 
 const successMessage = msg => {
   _antd.message.success(msg);

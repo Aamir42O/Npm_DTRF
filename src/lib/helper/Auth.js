@@ -1,26 +1,23 @@
 import Cookies from "js-cookie"
 import Router from 'next/router'
 import React from "react"
-
 const axios = require("axios");
-
-const reqWithToken = async (url, method, data, multi) => {
+const reqWithToken = async (url, method, data, from) => {
     console.log("URL", url)
-
-    let token = Cookies.get("accessToken")
-    if (!token) {
+    console.log("reqWithAut From", from)
+    let token
+    if (from.dtrfFront) {
+        token = Cookies.get("accessToken")
+    } else {
         token = Cookies.get("accessTokenAL")
     }
     console.log("Token", token)
     const config = {
         headers: {
             "accessToken": token
-
         }
     }
-
     console.log("accessToken", config)
-
     const options = {
         method: method,
         url: url,
@@ -30,9 +27,7 @@ const reqWithToken = async (url, method, data, multi) => {
         }
 
     }
-    if (multi) {
-        options.headers['Content-Type'] = 'multipart/form-data'
-    }
+
     let response
     try {
 

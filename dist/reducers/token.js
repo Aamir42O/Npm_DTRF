@@ -24,7 +24,9 @@ const initialState = {
   isAuthenticated: false,
   ROLES: [],
   sentToBdm: false,
-  isComplete: false
+  isComplete: false,
+  accessToken: "",
+  patientFound: false
 };
 
 function Token() {
@@ -36,6 +38,16 @@ function Token() {
   } = action;
 
   switch (type) {
+    case _action.PATIENT_FOUND:
+      return _objectSpread(_objectSpread({}, state), {}, {
+        patientFound: payload
+      });
+
+    case _action.SET_ACCESS_TOKEN:
+      return _objectSpread(_objectSpread({}, state), {}, {
+        accessToken: payload
+      });
+
     case _action.IS_COMPLETE:
       return _objectSpread(_objectSpread({}, state), {}, {
         isComplete: payload

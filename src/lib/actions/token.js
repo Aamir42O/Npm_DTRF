@@ -1,4 +1,4 @@
-import { DTRF_TOKEN, REF_TOKEN, SEND_BY, AUTHENTICATE, ROLES, IS_COMPLETE, SENT_TO_BDM } from "./action"
+import { DTRF_TOKEN, REF_TOKEN, SEND_BY, AUTHENTICATE, ROLES, IS_COMPLETE, SENT_TO_BDM, SET_ACCESS_TOKEN, PATIENT_FOUND } from "./action"
 
 
 export const setRefToken = (refToken) => dispatch => {
@@ -53,3 +53,16 @@ export const setIsComplete = (boolean) => dispatch => {
     })
 }
 
+export const setAccessToken = (token) => dispatch => {
+    dispatch({
+        type: SET_ACCESS_TOKEN,
+        payload: token
+    })
+}
+
+export const setPatientFoundFlag = (payload) => dispatch => {
+    dispatch({
+        type: PATIENT_FOUND,
+        payload
+    })
+}

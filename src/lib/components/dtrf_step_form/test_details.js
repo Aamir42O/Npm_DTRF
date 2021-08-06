@@ -13,6 +13,7 @@ import { setFormData } from "../../actions/formData";
 import formData from "../../reducers/form";
 import reqWithToken from "../../helper/Auth";
 import { successMessage, MousePopover, errorMessage, warningMessage, infoMessage } from "../../helper/commonHelper";
+import Cookies from "js-cookie"
 
 
 
@@ -118,7 +119,7 @@ const TestDetails = (props) => {
           container_type: props.testDetails.test_info.container_type[0].value,
           trimester_test: props.testDetails.test_info.trimester_test
         }
-        const searchedTestList = await reqWithToken(url, "POST", search)
+        const searchedTestList = await reqWithToken(url, "POST", search, { superDtrf: props.fromSuperDtrf, dtrfFront: props.fromDtrfFront ? props.fromDtrfFront : props.fromDashBoard })
         console.log("SEARCHED TEST LIST RESPONSE", searchedTestList)
         // const searchedTestList = await axios.post(url, search, config)
         return searchedTestList.data.data.testSearchList
@@ -131,7 +132,7 @@ const TestDetails = (props) => {
         // const url = "http://65.1.45.74:8187/v1/test/search"
 
         const search = { search_string: test, practice_type: props.formDataRedux.doctor_info.doctorName.practice_type };
-        const searchedTestList = await reqWithToken(url, "POST", search)
+        const searchedTestList = await reqWithToken(url, "POST", search, { superDtrf: props.fromSuperDtrf, dtrfFront: props.fromDtrfFront })
         console.log("SEARCHED TEST LIST RESPONSE", searchedTestList)
         // const searchedTestList = await axios.post(url, search, config);
         return searchedTestList.data.data.testSearchList;
@@ -142,9 +143,14 @@ const TestDetails = (props) => {
   const handleTestChange = (test) => {
     console.log(test);
     setSelectedTest(test);
-    if (props.formDataRedux.medical_info && props.formDataRedux.medical_info.sample_info) {
+    if (props.formDataRedux) {
       let data = props.formDataRedux
-      data.medical_info.sample_info = null
+      if (props.formDataRedux.medical_info) {
+        data.medical_info = null
+      }
+      if (props.formDataRedux.payment) {
+        data.payment = null
+      }
       props.setFormData(data)
 
     }
@@ -712,11 +718,12 @@ const TestDetails = (props) => {
                 </div>
                 <div className="col-md-6 col-12">
                   <AsyncSelect
+                    isDisabled={props.fromSuperDtrf ? (Cookies.get("roleAL") == "bdm" ? true : false) : false}
                     isClearable
                     cacheOptions
                     defaultOptions
                     value={selectedTest}
-                    getOptionLabel={(e) => e.test_name}
+                    getOptionLabel={(e) => e.display_test_name}
                     getOptionValue={(e) => e._id}
                     loadOptions={handleOnTestInputChange}
                     onChange={handleTestChange}
@@ -761,7 +768,7 @@ const TestDetails = (props) => {
                       <div className="row">
                         <div className="col-md-8 col-8">
                           <div className="section-title mt-0">
-                            {test.test_name}
+                            {test.display_test_name}
                           </div>
                         </div>
                         <div className="col-md-4 col-4 text-right">
@@ -769,6 +776,7 @@ const TestDetails = (props) => {
                             <button
                               value={id}
                               onClick={handleRemoveTest}
+                              disabled={props.fromSuperDtrf ? (Cookies.get("roleAL") == "bdm" ? true : false) : false}
                               type="submit"
                               className="btn btn-xs btn-danger"
                             >
@@ -796,7 +804,11 @@ const TestDetails = (props) => {
                           <div className="row">
                             <div className="col-lg-12 col-12">
                               <div className="form-group mb-0">
-                                <label><b>Sample Type:</b> {test.sampleType}</label>
+                                {props.fromDashBoard ?
+                                  <label><b>Sample Type:</b> {props.sampleType}</label>
+                                  :
+                                  <label><b>Sample Type:</b> {test.sampleType}</label>
+                                }
                               </div>
                             </div>
                             {/* <div className="col-lg-8 col-12 test-left">

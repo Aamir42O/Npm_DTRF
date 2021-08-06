@@ -15,12 +15,14 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 const axios = require("axios");
 
-const reqWithToken = async (url, method, data, multi) => {
+const reqWithToken = async (url, method, data, from) => {
   console.log("URL", url);
+  console.log("reqWithAut From", from);
+  let token;
 
-  let token = _jsCookie.default.get("accessToken");
-
-  if (!token) {
+  if (from.dtrfFront) {
+    token = _jsCookie.default.get("accessToken");
+  } else {
     token = _jsCookie.default.get("accessTokenAL");
   }
 
@@ -39,11 +41,6 @@ const reqWithToken = async (url, method, data, multi) => {
       "accessToken": token
     }
   };
-
-  if (multi) {
-    options.headers['Content-Type'] = 'multipart/form-data';
-  }
-
   let response;
 
   try {

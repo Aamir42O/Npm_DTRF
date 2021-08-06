@@ -21,6 +21,8 @@ var _formData = require("../../actions/formData");
 
 var _authHOC = _interopRequireDefault(require("../authHOC"));
 
+var _jsCookie = _interopRequireDefault(require("js-cookie"));
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function _getRequireWildcardCache(nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
@@ -42,9 +44,12 @@ const Institute = props => {
     if (institute.length > 2) {
       console.log("INSIDE", process.env.NEXT_PUBLIC_ALL_DOCTORS); // let url = `${process.env.NEXT_PUBLIC_ALL_DOCTORS}?searchquery=${institute}`
 
-      let url = "http://65.1.45.74:8187/v1/institute/search?searchquery=".concat(institute);
+      let url = process.env.NEXT_PUBLIC_GET_INSTITUTE + "?searchquery=".concat(institute);
       console.log("INSIDE condition", url);
-      const resp = await (0, _Auth.default)(url, "GET");
+      const resp = await (0, _Auth.default)(url, "GET", null, {
+        superDtrf: props.fromSuperDtrf,
+        dtrfFront: props.fromDtrfFront
+      });
       console.log(resp);
       return resp.data.data.instituteSearchList;
     }
@@ -144,6 +149,7 @@ const Institute = props => {
     }, /*#__PURE__*/_react.default.createElement("label", null, "Institute: ", /*#__PURE__*/_react.default.createElement("span", {
       className: "marked"
     }, "*")), /*#__PURE__*/_react.default.createElement(_async.default, {
+      isDisabled: _jsCookie.default.get("roleAL") == "bdm" ? true : false,
       isClearable: true,
       cacheOptions: true,
       defaultOptions: true,

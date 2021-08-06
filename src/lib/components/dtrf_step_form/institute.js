@@ -6,6 +6,7 @@ import { connect } from "react-redux";
 import { message, Tag, Spin } from "antd";
 import { setFormData } from '../../actions/formData';
 import withAuth from '../authHOC';
+import Cookies from "js-cookie"
 
 
 
@@ -19,9 +20,9 @@ export const Institute = (props) => {
         if (institute.length > 2) {
             console.log("INSIDE", process.env.NEXT_PUBLIC_ALL_DOCTORS)
             // let url = `${process.env.NEXT_PUBLIC_ALL_DOCTORS}?searchquery=${institute}`
-            let url = `http://65.1.45.74:8187/v1/institute/search?searchquery=${institute}`
+            let url = process.env.NEXT_PUBLIC_GET_INSTITUTE + `?searchquery=${institute}`
             console.log("INSIDE condition", url)
-            const resp = await reqWithToken(url, "GET")
+            const resp = await reqWithToken(url, "GET", null, { superDtrf: props.fromSuperDtrf, dtrfFront: props.fromDtrfFront })
             console.log(resp)
             return resp.data.data.instituteSearchList
 
@@ -113,6 +114,7 @@ export const Institute = (props) => {
                                                 Institute: <span className="marked">*</span>
                                             </label>
                                             <AsyncSelect
+                                                isDisabled={Cookies.get("roleAL") == "bdm" ? true : false}
                                                 isClearable
                                                 cacheOptions
                                                 defaultOptions

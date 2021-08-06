@@ -105,7 +105,10 @@ const Dtrf_form = props => {
 
   const getSavedDtrf = async () => {
     const url = process.env.NEXT_PUBLIC_GET_SUPER_DTRF + "/" + router.query.id;
-    const res = await (0, _Auth.default)(url, "GET");
+    const res = await (0, _Auth.default)(url, "GET", null, {
+      dtrfFront: props.fromDtrfFront,
+      superDtrf: props.fromSuperDtrf
+    });
     console.log("router", router.query);
     console.log("response", res);
 
@@ -287,7 +290,10 @@ const Dtrf_form = props => {
     formData.append("dtrf", JSON.stringify(formValues));
     formData.append("dtrf_id", JSON.stringify(props.Token.dtrfToken));
     const url = process.env.NEXT_PUBLIC_SAVE_INCOMPLETE_DTRF;
-    const response = await (0, _Auth.default)(url, "POST", formData);
+    const response = await (0, _Auth.default)(url, "POST", formData, {
+      dtrfFront: props.fromDtrfFront,
+      superDtrf: props.fromSuperDtrf
+    });
 
     if (response) {
       console.log("RESPONSE", response);

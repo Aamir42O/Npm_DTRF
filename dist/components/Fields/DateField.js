@@ -24,7 +24,7 @@ const DateFieldComponent = props => {
     className: "form-control",
     min: props.min,
     max: props.max,
-    disabled: props.disabled
+    disabled: props.isDisabled
   }), /*#__PURE__*/_react.default.createElement(_formik.ErrorMessage, {
     name: props.name,
     component: "div",

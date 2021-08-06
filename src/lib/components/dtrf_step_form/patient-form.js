@@ -6,7 +6,7 @@ import { cityList, stateList } from "../../public/constants";
 import Router, { useRouter, withRouter } from "next/router";
 import { connect } from "react-redux";
 import { nanoid } from "nanoid";
-import { setDtrfToken, setRefToken } from "../../actions/token";
+import { setDtrfToken, setPatientFoundFlag, setRefToken } from "../../actions/token";
 import axios from "axios";
 import { message, Radio } from "antd";
 import { Modal, Button } from "react-bootstrap";
@@ -16,7 +16,7 @@ import RadioField from "../Fields/Radio"
 import NumberField from "../Fields/NumberField";
 import TextField from "../Fields/TextField"
 import DateFieldComponent from "../Fields/DateField"
-import { successMessage, MousePopover, errorMessage, warningMessage, infoMessage } from "../../helper/commonHelper";
+import { successMessage, MousePopover, errorMessage, warningMessage, infoMessage, hasValue } from "../../helper/commonHelper";
 import DisplayFields from "../DisplayFields/DisplayField";
 const emptyFormObject = {
   salutation: "mr",
@@ -131,7 +131,7 @@ const PatientForm = (props) => {
   }
   useEffect(async () => {
     console.log("props00000000000000000000000000", props);
-    if (props.testGroup) {
+    if (props.testGroup && (props.sendBy == "Link")) {
       if (props.testGroup == "PNS") {
         setHasPns(true)
       } else if (props.testGroup == "NIPT") {
@@ -142,12 +142,23 @@ const PatientForm = (props) => {
         setHasNipt(true)
       }
     }
+    if (props.sendBy == "Link") {
+      setPatientEntryType("Staff")
+    }
     if (props.sendBy && props.sendBy == "Link" && !props.isNew) {
       props.getPatient_details(props.patient)
     }
-    getDataFromTest()
+    if (props.sendBy == "Link") {
+      setMaxAge(props.maxAge)
+      setGender(props.gender)
+    } else {
+      getDataFromTest()
+    }
     if (props.dynamicPatient.dateOfBirth && !ageInYears) {
-      setAgeInYMD(props.dynamicPatient.dateOfBirth)
+      let age = setAgeInYMD(props.dynamicPatient.dateOfBirth)
+      setAgeInYears(age.years)
+      setAgeInMonths(age.months)
+      setAgeInDays(age.days)
       if (props.dynamicPatient.fathersName) {
         setDateOfBirth(props.dynamicPatient.dateOfBirth)
       } else {
@@ -215,9 +226,27 @@ const PatientForm = (props) => {
     }
   }, [props.patient, patient]);
 
+  const getAgeInDate = (age) => {
+    let presentDate = moment()
+    presentDate = moment(presentDate).subtract(age.years, 'years').format('DD MMM YYYY');
+    presentDate = moment(presentDate).subtract(age.months, 'months').format('DD MMM YYYY');
+    presentDate = moment(presentDate).subtract(age.days, 'days').format('DD MMM YYYY');
+    return moment(presentDate).format("YYYY-MM-DD")
+  }
 
+  const setAgeInYMD = (dob) => {
+    let presentDate = moment()
+    let DOB = moment(dob)
+    console.log("DOB", DOB)
+    let age = moment.duration(moment(presentDate).diff(DOB));
+    let years = age.years();
+    console.log(years, "age")
+    let months = age.months();
+    console.log(months, "moths")
+    let days = age.days()
+    console.log(days, "moths")
+    return { days, months, years }
 
-  const setAgeInYMD = (dateOfBirth) => {
     console.log("AGE IN DATEOFBIRTH", dateOfBirth)
     let ageInYears = moment().diff(dateOfBirth, "years")
     console.log("Age in Years", ageInYears)
@@ -269,6 +298,7 @@ const PatientForm = (props) => {
 
     const values = JSON.parse(JSON.stringify(patientInfo))
     if (patientEntryType == "Staff") {
+
       values.filledBy = patientEntryType
       if (values.dateOfBirth) {
         values.dateOfBirth = moment(values.dateOfBirth).format("YYYY-MM-DD")
@@ -457,31 +487,6 @@ const PatientForm = (props) => {
   };
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~CLOSE~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  const handleSalutationChange = (salutation) => {
-    fromDetails.salutation = salutation.target.value;
-    setSalutation(salutation.target.value)
-    setFormDetails(fromDetails);
-    reRender({});
-  };
-
-  const handleNameChange = (value) => {
-    console.log(value.target.value, value.target.name);
-    fromDetails.name[value.target.name] = value.target.value;
-
-    setFormDetails(fromDetails);
-    setShowErrorMessage(false);
-    reRender({});
-  };
-
-  const handleValueChange = (value) => {
-    console.log(value.target.value, value.target.name);
-    fromDetails[value.target.name] = value.target.value;
-    fromDetails.filledBy = filledBy
-    setFormDetails(fromDetails);
-    setShowErrorMessage(false);
-    reRender({});
-  };
-
   const handleCityChange = (value) => {
     console.log(value);
     fromDetails.city = value.value;
@@ -522,12 +527,14 @@ const PatientForm = (props) => {
         "ref_token": refId,
         "dtrf_token": props.Token.dtrfToken,
         "phone_number": formikRef.current.values.contact,
-        "category": testGroup
+        "category": testGroup,
+        "maxAge": maxAge,
+        "gender": gender
 
       }
       const url = process.env.NEXT_PUBLIC_SEND_KYC_LINK
       // const url = "http://dtrf.aiolos.solutions:8187/v1/patient/send-patient-kyc-link"
-      const res = await reqWithToken(url, "POST", formData)
+      const res = await reqWithToken(url, "POST", formData, { superDtrf: props.fromSuperDtrf, dtrfFront: props.fromDtrfFront })
       // const res = await axios.post(process.env.NEXT_PUBLIC_SEND_KYC_LINK, formData)
       console.log(res)
     } else {
@@ -536,13 +543,15 @@ const PatientForm = (props) => {
         "dtrf_token": props.Token.dtrfToken,
         "phone_number": formikRef.current.values.contact,
         "patient_id": props.dynamicPatient._id,
-        "category": testGroup
+        "category": testGroup,
+        "maxAge": maxAge,
+        "gender": gender
       }
       console.log("Inside existing patient ", patient)
       const url = process.env.NEXT_PUBLIC_SEND_KYC_LINK
       // const url = "http://dtrf.aiolos.solutions:8187/v1/patient/send-patient-kyc-link"
 
-      const res = await reqWithToken(url, "POST", formData)
+      const res = await reqWithToken(url, "POST", formData, { superDtrf: props.fromSuperDtrf, dtrfFront: props.fromDtrfFront })
 
       // const res = await axios.post(process.env.NEXT_PUBLIC_SEND_KYC_LINK, formData)
       console.log("RESPONSE", res)
@@ -580,20 +589,21 @@ const PatientForm = (props) => {
         let currentDetail = ""
         let prefilledDetail = ""
         if (props.dynamicPatient != "new") {
-          currentDetail = formikRef.current.values.firstName + formikRef.current.values.lastName + formikRef.current.values.contact + formikRef.current.values.dateOfBirth
+          currentDetail = formikRef.current.values.firstName.trim() + formikRef.current.values.lastName.trim() + formikRef.current.values.contact + moment(formikRef.current.values.dateOfBirth).format("YYYY-MM-DD")
           // currentDetail = firstName + lastName + contact + dateOfBirth
           prefilledDetail = props.dynamicPatient.name.firstName + props.dynamicPatient.name.lastName + props.dynamicPatient.contact + props.dynamicPatient.dateOfBirth
         }
-        if ((currentDetail != prefilledDetail) || props.new) {
+        console.log("Patient search condition ", currentDetail, prefilledDetail, currentDetail == prefilledDetail)
+        if ((currentDetail != prefilledDetail) && !patientFound) {
 
           await searchPatient(formikRef.current.values.firstName,
             formikRef.current.values.lastName,
             formikRef.current.values.contact,
-            formikRef.current.values.dateOfBirth)
+            moment(formikRef.current.values.dateOfBirth).format("YYYY-MM-DD"))
         }
       }
     }
-    if (formikRef.current) {
+    if (formikRef.current && props.sendBy != "Link") {
       tempFunc()
     }
 
@@ -602,7 +612,7 @@ const PatientForm = (props) => {
   const searchPatient = async (firstName, lastName, contact, dateOfBirth) => {
     console.log("INSIDE SEARCH PATIENT", dateOfBirth)
     let errors = {}
-    let dateOfBirth2 = moment(dateOfBirth).format("YYYY-MM-DD")
+    // let dateOfBirth2 = moment(dateOfBirth).format("YYYY-MM-DD")
     // let dateOfBirth2 = moment(dateOfBirth).format("DD/MM/YYYY")
     if ((!/^[a-zA-Z ]+$/.test(firstName)) || ((!/^[a-zA-Z ]+$/.test(lastName)))) {
       errors.name = "Only alphabet in name"
@@ -623,17 +633,17 @@ const PatientForm = (props) => {
           lastName
         },
         contact,
-        dateOfBirth: dateOfBirth2
+        dateOfBirth
       }
       const url = process.env.NEXT_PUBLIC_CHECK_PATIENT
       // const url = "http://localhost:8184/v1/patient/check-patient"
-      const res = await reqWithToken(url, "POST", data)
+      const res = await reqWithToken(url, "POST", data, { superDtrf: props.fromSuperDtrf, dtrfFront: props.fromDtrfFront })
 
       if (res && res.data.message == "Patient Found") {
         console.log(res.data.data, "Patient Found")
 
 
-        setPatientFoundDetails(res.data.data)
+        setPatientFoundDetails(res.data.data.patient)
         setPatientFound(true)
         setPatientFoundModal(true)
       }
@@ -683,11 +693,11 @@ const PatientForm = (props) => {
                   smoking: props.dynamicPatient.smoking,
                   folicAcidIntake: props.dynamicPatient.folicAcidIntake,
                   hasBabyName: props.dynamicPatient.hasBabyName ? props.dynamicPatient.hasBabyName.toString() : props.dynamicPatient.hasBabyName == false ? props.dynamicPatient.hasBabyName.toString() : "",
-                  mothersFirstName: (props.dynamicPatient.gender == "f" && !props.dynamicPatient.mothersFirstName) ? props.dynamicPatient.name.firstName : props.dynamicPatient.mothersFirstName ? props.dynamicPatient.mothersFirstName : "",
-                  mothersLastName: (props.dynamicPatient.gender == "f" && !props.dynamicPatient.mothersFirstName) ? props.dynamicPatient.name.lastName : props.dynamicPatient.mothersLastName ? props.dynamicPatient.mothersLastName : "",
-                  mothersDateOfBirth: (props.dynamicPatient.gender == "f" && !props.dynamicPatient.mothersFirstName) ? props.dynamicPatient.dateOfBirth : props.dynamicPatient.mothersDateOfBirth ? props.dynamicPatient.mothersDateOfBirth : "",
-                  fathersFirstName: props.dynamicPatient.fathersName ? props.dynamicPatient.fathersName.firstName : props.dynamicPatient.fathersFirstName ? props.dynamicPatient.fathersFirstName : props.dynamicPatient.gender == "m" ? props.dynamicPatient.name.firstName : "",
-                  fathersLastName: props.dynamicPatient.fathersName ? props.dynamicPatient.fathersName.lastName : props.dynamicPatient.fathersLastName ? props.dynamicPatient.fathersFirstName : props.dynamicPatient.gender == "m" ? props.dynamicPatient.name.lastName : "",
+                  mothersFirstName: (props.dynamicPatient.gender == "female" && !props.dynamicPatient.mothersFirstName) ? props.dynamicPatient.name.firstName : props.dynamicPatient.mothersFirstName ? props.dynamicPatient.mothersFirstName : "",
+                  mothersLastName: (props.dynamicPatient.gender == "female" && !props.dynamicPatient.mothersFirstName) ? props.dynamicPatient.name.lastName : props.dynamicPatient.mothersLastName ? props.dynamicPatient.mothersLastName : "",
+                  mothersDateOfBirth: (props.dynamicPatient.gender == "female" && !props.dynamicPatient.mothersFirstName) ? props.dynamicPatient.dateOfBirth : props.dynamicPatient.mothersDateOfBirth ? props.dynamicPatient.mothersDateOfBirth : "",
+                  fathersFirstName: props.dynamicPatient.fathersName ? props.dynamicPatient.fathersName.firstName : props.dynamicPatient.fathersFirstName ? props.dynamicPatient.fathersFirstName : props.dynamicPatient.gender == "male" ? props.dynamicPatient.name.firstName : "",
+                  fathersLastName: props.dynamicPatient.fathersName ? props.dynamicPatient.fathersName.lastName : props.dynamicPatient.fathersLastName ? props.dynamicPatient.fathersFirstName : props.dynamicPatient.gender == "male" ? props.dynamicPatient.name.lastName : "",
                   babysFirstName: props.dynamicPatient.babysFirstName,
                   babysLastName: props.dynamicPatient.babysLastName,
                   dateOfBirthType: props.dynamicPatient.dateOfBirthType,
@@ -696,10 +706,11 @@ const PatientForm = (props) => {
                   ageInDays: ageInDays,
                   ageType: props.dynamicPatient.ageType,
                   dateOfBirth: props.dynamicPatient.dateOfBirth,
-                  test: props.dynamicPatient.test
-
-
-
+                  test: props.dynamicPatient.test,
+                  mothersAgeInYears: props.dynamicPatient.mothersAgeInYears,
+                  mothersAgeInMonths: props.dynamicPatient.mothersAgeInMonths,
+                  mothersAgeInDays: props.dynamicPatient.mothersAgeInDays,
+                  mothersAgeType: props.dynamicPatient.mothersAgeType ? props.dynamicPatient.mothersAgeType : "dob"
                 } : props.patient == "new" && props.new ? {
                   salutation: "",
                   hospitalId: "",
@@ -740,7 +751,11 @@ const PatientForm = (props) => {
                   ageInDays: "",
                   ageType: "dob",
                   dateOfBirth: "",
-                  test: ""
+                  test: "",
+                  mothersAgeInYears: "",
+                  mothersAgeInMonths: "",
+                  mothersAgeInDays: "",
+                  mothersAgeType: "dob"
                 } : props.patient.hasOwnProperty("name") && !props.new && {
                   // THIS RUNS WHEN PATIENT DETAILS NOT IN REDUX
                   hospitalId: props.patient.hospitalId ? props.patient.hospitalId : "",
@@ -762,12 +777,12 @@ const PatientForm = (props) => {
                   height: props.patient.height,
                   smoking: props.patient.smoking,
                   folicAcidIntake: props.patient.folicAcidIntake,
-                  mothersFirstName: (!props.dynamicPatient.mothersName && props.dynamicPatient.gender == "f") ? props.dynamicPatient.name.firstName : props.dynamicPatient.mothersName ? props.dynamicPatient.mothersName.firstName : "",
-                  mothersLastName: (props.dynamicPatient.gender == "f" && !props.dynamicPatient.mothersName) ? props.dynamicPatient.name.lastName : props.dynamicPatient.mothersName ? props.dynamicPatient.mothersName.lastName : "",
-                  mothersDateOfBirth: (!props.dynamicPatient.mothersName && props.dynamicPatient.gender == "f") ? props.dynamicPatient.dateOfBirth : props.dynamicPatient.mothersDateOfBirth ? props.dynamicPatient.mothersDateOfBirth : "",
+                  mothersFirstName: (!props.dynamicPatient.mothersName && props.dynamicPatient.gender == "female") ? props.dynamicPatient.name.firstName : props.dynamicPatient.mothersName ? props.dynamicPatient.mothersName.firstName : "",
+                  mothersLastName: (props.dynamicPatient.gender == "female" && !props.dynamicPatient.mothersName) ? props.dynamicPatient.name.lastName : props.dynamicPatient.mothersName ? props.dynamicPatient.mothersName.lastName : "",
+                  mothersDateOfBirth: (!props.dynamicPatient.mothersName && props.dynamicPatient.gender == "female") ? props.dynamicPatient.dateOfBirth : props.dynamicPatient.mothersDateOfBirth ? props.dynamicPatient.mothersDateOfBirth : "",
                   hasBabyName: props.patient.hasBabyName ? props.patient.hasBabyName.toString() : props.patient.hasBabyName == false ? props.patient.hasBabyName.toString() : "",
-                  fathersFirstName: (!props.dynamicPatient.mothersName && props.dynamicPatient.gender == "m") ? props.dynamicPatient.name.firstName : props.dynamicPatient.fathersName ? props.dynamicPatient.fathersName.firstName : "",
-                  fathersLastName: (!props.dynamicPatient.mothersName && props.dynamicPatient.gender == "m") ? props.dynamicPatient.name.lastName : props.dynamicPatient.fathersName ? props.dynamicPatient.fathersName.lastName : "",
+                  fathersFirstName: (!props.dynamicPatient.mothersName && props.dynamicPatient.gender == "male") ? props.dynamicPatient.name.firstName : props.dynamicPatient.fathersName ? props.dynamicPatient.fathersName.firstName : "",
+                  fathersLastName: (!props.dynamicPatient.mothersName && props.dynamicPatient.gender == "male") ? props.dynamicPatient.name.lastName : props.dynamicPatient.fathersName ? props.dynamicPatient.fathersName.lastName : "",
                   babysFirstName: props.patient.babysFirstName,
                   babysLastName: props.patient.babysLastName,
                   dateOfBirthType: props.patient.dateOfBirthType,
@@ -776,9 +791,11 @@ const PatientForm = (props) => {
                   ageInDays: ageInDays,
                   ageType: props.patient.ageType ? props.patient.ageType : "dob",
                   dateOfBirth: (hasNbs && !props.dynamicPatient.fathersName) ? "" : props.patient.dateOfBirth,
-                  test: props.patient.test
-
-
+                  test: props.patient.test,
+                  mothersAgeInYears: "",
+                  mothersAgeInMonths: "",
+                  mothersAgeInDays: "",
+                  mothersAgeType: "dob"
                 }}
                 validate={async (values) => {
                   const errors = {};
@@ -791,14 +808,14 @@ const PatientForm = (props) => {
 
                       if (values.firstName) {
 
-                        if (!/^[a-zA-Z]+$/.test(values.firstName)) {
+                        if (!/^[a-zA-Z ]+$/.test(values.firstName)) {
                           errors.firstName = "Name should be in alphabets";
                         }
                       }
 
                       if (values.lastName) {
 
-                        if (!/^[a-zA-Z]+$/.test(values.lastName)) {
+                        if (!/^[a-zA-Z ]+$/.test(values.lastName)) {
                           errors.lastName = "Name should be in alphabets";
                         }
                       }
@@ -819,6 +836,20 @@ const PatientForm = (props) => {
                       } else {
                         if (hasNbs) {
                           console.log("INSIDE NBS VALIDATION")
+
+                          if (values.mothersDateOfBirth && values.mothersAgeType == "dob") {
+                            let age = setAgeInYMD(values.mothersDateOfBirth)
+                            values.mothersAgeInDays = age.days,
+                              values.mothersAgeInMonths = age.months
+                            values.mothersAgeInYears = age.years
+                          }
+
+                          if (hasValue(values.mothersAgeInDays) &&
+                            hasValue(values.mothersAgeInMonths) &&
+                            hasValue(values.mothersAgeInDays) && values.mothersAgeType == "ageInYMD") {
+                            values.mothersDateOfBirth = getAgeInDate({ years: values.mothersAgeInYears, months: values.mothersAgeInMonths, days: values.mothersAgeInDays })
+                          }
+
                           if (values.ageType == "ageInYMD") {
 
                             if (values.ageInYears) {
@@ -858,7 +889,7 @@ const PatientForm = (props) => {
                             // if (diff >= 0) {
                             //   errors.mothersDateOfBirth = "Invalid Date"
                             // }
-                            const diff2 = moment(moment().format("YYYY-MM-DD")).diff(values.mothersDateOfBirth, "days")
+                            const diff2 = moment(moment().format("YYYY-MM-DD")).diff(values.mothersDateOfBirth, "years")
                             if (diff2 < 18) {
                               errors.mothersDateOfBirth = "Age should be more than 18 Years"
                             }
@@ -1069,13 +1100,13 @@ const PatientForm = (props) => {
                       if (!values.firstName) {
                         errors.firstName = "Required";
                       }
-                      else if (!/^[a-zA-Z]+$/.test(values.firstName)) {
+                      else if (!/^[a-zA-Z ]+$/.test(values.firstName)) {
                         errors.firstName = "Name should be in alphabets";
                       }
                       if (!values.lastName) {
                         errors.lastName = "Required";
                       }
-                      else if (!/^[a-zA-Z]+$/.test(values.lastName)) {
+                      else if (!/^[a-zA-Z ]+$/.test(values.lastName)) {
                         errors.lastName = "Name should be in alphabets";
                       }
                       if (!values.contact) {
@@ -1104,6 +1135,20 @@ const PatientForm = (props) => {
                       } else {
                         if (hasNbs) {
                           console.log("INSIDE NBS VALIDATION")
+
+
+                          if (values.mothersDateOfBirth && values.mothersAgeType == "dob") {
+                            let age = setAgeInYMD(values.mothersDateOfBirth)
+                            values.mothersAgeInDays = age.days,
+                              values.mothersAgeInMonths = age.months
+                            values.mothersAgeInYears = age.years
+                          }
+
+                          if (hasValue(values.mothersAgeInDays) &&
+                            hasValue(values.mothersAgeInMonths) &&
+                            hasValue(values.mothersAgeInDays) && values.mothersAgeInYears == "ageInYMD") {
+                            values.mothersDateOfBirth = getAgeInDate({ years: values.mothersAgeInYears, months: values.mothersAgeInMonths, days: values.mothersAgeInDays })
+                          }
                           if (values.ageType == "ageInYMD") {
 
                             if (values.ageInYears) {
@@ -1141,15 +1186,28 @@ const PatientForm = (props) => {
                           if (!values.mothersFirstName) {
                             errors.mothersFirstName = "Required"
                           }
-                          if (!values.mothersDateOfBirth) {
-                            errors.mothersDateOfBirth = "Required"
+                          if (values.mothersAgeType == "dob") {
+
+                            if (!values.mothersDateOfBirth) {
+                              errors.mothersDateOfBirth = "Required"
+                            }
+                          } else if (values.mothersAgeType == "ageInYMD") {
+                            if (!hasValue(values.mothersAgeInYears)) {
+                              errors.mothersAgeInYears = "Required"
+                            }
+                            if (!hasValue(values.mothersAgeInDays)) {
+                              errors.mothersAgeInDays = "Required"
+                            }
+                            if (!hasValue(values.mothersAgeInMonths)) {
+                              errors.mothersAgeInMonths = "Required"
+                            }
                           }
                           if (values.mothersDateOfBirth) {
                             const diff = moment(moment().format("YYYY-MM-DD")).diff(values.mothersDateOfBirth, "days")
                             // if (diff >= 0) {
                             //   errors.mothersDateOfBirth = "Invalid Date"
                             // }
-                            const diff2 = moment(moment().format("YYYY-MM-DD")).diff(values.mothersDateOfBirth, "days")
+                            const diff2 = moment(moment().format("YYYY-MM-DD")).diff(values.mothersDateOfBirth, "years")
                             if (diff2 < 18) {
                               errors.mothersDateOfBirth = "Age should be more than 18 Years"
                             }
@@ -1364,6 +1422,9 @@ const PatientForm = (props) => {
                 }}
                 onSubmit={async (values, { setSubmitting }, errors) => {
                   console.log("Errors", errors);
+                  if (!patientEntryType && props.dtrfFront) {
+                    return
+                  }
                   if (props.sendBy == "Link") {
                     console.log(router.query);
                     console.log("SElected ", selectedCity, selectedState, values)
@@ -1384,7 +1445,7 @@ const PatientForm = (props) => {
 
                       console.log("VALUES", values)
                       const url = process.env.NEXT_PUBLIC_PATIENT_UPDATE
-                      const res = await reqWithToken(url, "POST", { ...values })
+                      const res = await reqWithToken(url, "POST", { ...values }, { superDtrf: props.fromSuperDtrf, dtrfFront: props.fromDtrfFront })
                       // const res = await axios.post(process.env.NEXT_PUBLIC_PATIENT_UPDATE, { ...values })
                       if (res.status == 200) {
                         props.setIsSubmitted(true)
@@ -1397,7 +1458,7 @@ const PatientForm = (props) => {
 
                       try {
                         const url = process.env.NEXT_PUBLIC_PATIENT_CREATE
-                        const res = await reqWithToken(url, "POST", { ...values })
+                        const res = await reqWithToken(url, "POST", { ...values }, { superDtrf: props.fromSuperDtrf, dtrfFront: props.fromDtrfFront })
                         // const res = await axios.post(process.env.NEXT_PUBLIC_PATIENT_CREATE, { ...values })
                         if (res.status == 200) {
                           props.setIsSubmitted(true)
@@ -1592,7 +1653,7 @@ const PatientForm = (props) => {
                             <br></br>
 
                             {props.formValues && props.formValues.collectionLocation.location !=
-                              "Home" && (
+                              "Home" && (props.sendBy != "Link") && (
                                 <>
                                   <label>
                                     <b>To be filled by</b>
@@ -1643,7 +1704,7 @@ const PatientForm = (props) => {
                                       title={"Title"}
                                       mandatory={false}
                                       options={[{ value: "Mrs", label: "Mrs" }, { value: "Ms", label: "Ms" },
-                                      { value: "Mr", label: "Mr" }]}
+                                      { value: "Mr", label: "Mr" }, { value: "Mx", label: "Mx" }]}
                                     />
                                   }
                                 </div>
@@ -1675,7 +1736,6 @@ const PatientForm = (props) => {
                                         title="First Name"
                                         mandatory={true}
                                         placeholder="Enter first name"
-                                        disabled={patientFound && !usePatientFound}
                                         className={"col-md-5"}
                                       />
 
@@ -1684,7 +1744,6 @@ const PatientForm = (props) => {
                                         title="Last Name"
                                         mandatory={hasNbs ? false : true}
                                         placeholder="Enter last name"
-                                        disabled={patientFound && !usePatientFound}
                                         className={"col-md-5"}
                                       />
                                     </div>
@@ -1700,7 +1759,6 @@ const PatientForm = (props) => {
                                         title="First Name"
                                         mandatory={true}
                                         placeholder="Enter first name"
-                                        disabled={patientFound && !usePatientFound}
                                         className={"col-sm"}
                                       />
 
@@ -1709,7 +1767,6 @@ const PatientForm = (props) => {
                                         title="Last Name"
                                         mandatory={true}
                                         placeholder="Enter last name"
-                                        disabled={patientFound && !usePatientFound}
                                         className={"col-sm"}
                                       />
                                     </>
@@ -1722,13 +1779,13 @@ const PatientForm = (props) => {
                                     title="Contact Number"
                                     mandatory={true}
                                     placeholder="Enter Contact Number"
-                                    disabled={(props.new ? false : true) || (patientFound && !usePatientFound)}
                                   />
 
                                   {
                                     hasNbs &&
                                     <RadioField
-                                      title="Gender"
+                                      toolTip={<div style={{ width: "300px", display: "block" }}>Lilac Insights is an inclusive organization and is sensitive to the fact that an individual may or may not identify with the sex assigned at birth. We therefore use terminologies that are scientific and inclusive. Sex assigned at birth is the sex assigned to an individual at birth, most often based on external anatomy.</div>}
+                                      title="Sex assigned at Birth"
                                       name="gender"
                                       mandatory={true}
                                       options={[{ value: "male", label: "Male" },
@@ -1740,7 +1797,7 @@ const PatientForm = (props) => {
                                   }
                                 </div>
 
-                                {((!props.new &&
+                                {(( // !props.isNew
                                   props.formValues.collectionLocation.location !=
                                   "Home") || props.sendBy && props.sendBy == "Link") && (
                                     <>
@@ -1751,7 +1808,7 @@ const PatientForm = (props) => {
                                           title="Age In"
                                           mandatory={true}
                                           options={[{ label: "Date Of birth", value: "dob" },
-                                          { label: "Years-Months-days", value: "ageInYMD" }]}
+                                          { label: "Years-Months-Days", value: "ageInYMD" }]}
                                         />
 
                                         {values.ageType == "ageInYMD" &&
@@ -1803,7 +1860,8 @@ const PatientForm = (props) => {
                                         {!hasNbs &&
 
                                           <RadioField
-                                            title="Gender"
+                                            toolTip={<div style={{ width: "300px", display: "block" }}>Lilac Insights is an inclusive organization and is sensitive to the fact that an individual may or may not identify with the sex assigned at birth. We therefore use terminologies that are scientific and inclusive. Sex assigned at birth is the sex assigned to an individual at birth, most often based on external anatomy.</div>}
+                                            title="Sex assigned at Birth"
                                             name="gender"
                                             mandatory={true}
                                             options={[{ value: "male", label: "Male" },
@@ -1856,12 +1914,56 @@ const PatientForm = (props) => {
 
                                           </div>
                                           <div className="row">
-                                            <DateFieldComponent
-                                              name="mothersDateOfBirth"
-                                              title="Mothers DOB"
-                                              max={moment().format("YYYY-MM-DD")}
+                                            <RadioField
+                                              name="mothersAgeType"
+                                              title="Mothers Age In"
                                               mandatory={true}
+                                              options={[{ label: "Date Of birth", value: "dob" },
+                                              { label: "Years-Months-Days", value: "ageInYMD" }]}
                                             />
+                                            {
+                                              values.mothersAgeType == "dob" &&
+
+                                              <DateFieldComponent
+                                                name="mothersDateOfBirth"
+                                                title="Mothers DOB"
+                                                max={moment().format("YYYY-MM-DD")}
+                                                mandatory={true}
+                                              />
+                                            }
+                                          </div>
+                                          <div className="row">
+                                            {
+                                              values.mothersAgeType == "ageInYMD" &&
+                                              <>
+                                                <div className="col-sm my-auto" >
+                                                  <label style={{ paddingLeft: "20px" }}>Age In</label>
+                                                </div>
+                                                <NumberField
+                                                  name="mothersAgeInYears"
+                                                  placeholder="Enter age in Year"
+                                                  title="Years"
+                                                  mandatory={true}
+                                                  disabled={patientFound && !usePatientFound}
+                                                  className="col-sm"
+                                                />
+                                                <NumberField
+                                                  name="mothersAgeInMonths"
+                                                  title="Months"
+                                                  mandatory={true}
+                                                  disabled={patientFound && !usePatientFound}
+                                                  className="col-sm"
+                                                />
+                                                <NumberField
+                                                  name="mothersAgeInDays"
+                                                  title="Days"
+                                                  mandatory={true}
+                                                  disabled={patientFound && !usePatientFound}
+                                                  className="col-sm"
+                                                />
+
+                                              </>
+                                            }
                                           </div>
 
                                           <div className="row">
@@ -1897,7 +1999,7 @@ const PatientForm = (props) => {
                                           !hasNbs && <>
                                             <TextField
                                               name="husbandsOrFathersName"
-                                              title="Husband's/Father Name"
+                                              title="Husband's/Father's Name"
                                               placeholder="Enter Husband's/Father Name"
                                               disabled={patientFound && !usePatientFound}
                                             />
@@ -1947,7 +2049,7 @@ const PatientForm = (props) => {
                                         <div className="col-md-6 col-12">
                                           <div className="form-group">
                                             <label>
-                                              City <span className="marked">*</span>
+                                              City<span className="marked">*</span>
                                             </label>
 
                                             <Select
@@ -1969,7 +2071,7 @@ const PatientForm = (props) => {
                                         <div className="col-md-6 col-12">
                                           <div className="form-group">
                                             <label>
-                                              State <span className="marked">*</span>
+                                              State<span className="marked">*</span>
                                             </label>
                                             <Select
                                               name="state"
@@ -1988,18 +2090,18 @@ const PatientForm = (props) => {
                                         </div>
                                       </div>
                                       {
-                                        (hasNipt || props.sendBy == "Link") && <div className="row">
+                                        (hasNipt) && <div className="row">
                                           <NumberField
                                             name="weight"
                                             placeholder="Enter Weight"
-                                            title="Weight (in kg) "
+                                            title="Weight (in kg)"
                                             mandatory={true}
                                             disabled={patientFound && !usePatientFound}
                                           />
                                           <NumberField
                                             name="height"
                                             placeholder="Enter Weight"
-                                            title="Height (in cm) "
+                                            title="Height (in cm)"
                                             mandatory={true}
                                             disabled={patientFound && !usePatientFound}
                                           />
@@ -2012,14 +2114,14 @@ const PatientForm = (props) => {
                                           <NumberField
                                             name="weight"
                                             placeholder="Enter Weight"
-                                            title="Weight (in kg) "
+                                            title="Weight (in kg)"
                                             mandatory={true}
                                             disabled={patientFound && !usePatientFound}
                                           />
                                           <NumberField
                                             name="height"
                                             placeholder="Enter Height"
-                                            title="Height (in cm) "
+                                            title="Height (in cm)"
                                             mandatory={true}
                                             disabled={patientFound && !usePatientFound}
 
@@ -2027,7 +2129,7 @@ const PatientForm = (props) => {
                                         </div>
                                       }
 
-                                      {((hasPns || props.sendBy == "Link") && !hasNbs) &&
+                                      {((hasPns) && !hasNbs) &&
                                         <div className="row">
                                           <RadioField
                                             name="smoking"
@@ -2065,7 +2167,6 @@ const PatientForm = (props) => {
                                   title="Contact Number"
                                   mandatory={true}
                                   placeholder="Enter Contact Number"
-                                  disabled={(props.new ? false : true) || (patientFound && !usePatientFound)}
                                 />
                                 <button
                                   onClick={handleSendFormLink}
@@ -2082,7 +2183,11 @@ const PatientForm = (props) => {
                             </>
                           )}
                         </div>
-                        {props.sendBy == "Link" ? <button type="submit" className="btn btn-primary" disabled={props.isSubmitted}>Save</button> :
+                        {props.sendBy == "Link" ?
+                          <div className="col-md-12 col-12 text-right">
+                            <button type="submit" className="btn btn-primary" disabled={props.isSubmitted}>Save</button>
+                          </div>
+                          :
 
                           <div className="row" id="action1">
                             {props.fromSuperDtrf &&
@@ -2151,4 +2256,5 @@ const mapStateToProps = state => ({
 
 })
 
-export default connect(mapStateToProps, { setDtrfToken, setRefToken, setFormData, getPatient_details })(withRouter(PatientForm));
+
+export default connect(mapStateToProps, { setDtrfToken, setRefToken, setFormData, getPatient_details, setPatientFoundFlag })(withRouter(PatientForm));

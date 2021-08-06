@@ -77,7 +77,11 @@ const PatientDetails = (props) => {
       props.nextStep();
       console.log(props);
     } else {
-      props.goToStep(5);
+      if (props.fromSuperDtrf) {
+        props.goToStep(6)
+      } else if (props.fromDtrfFront) {
+        props.goToStep(5);
+      }
       console.log(props);
     }
   };
@@ -94,7 +98,7 @@ const PatientDetails = (props) => {
       const url = `${process.env.NEXT_PUBLIC_PATIENT_SEARCH}?searchquery=${searchString}`
       // const url = `http://dtrf.aiolos.solutions:8187/v1/patient/search?searchquery=${searchString}`
       const search = { str: searchString };
-      const searchedTestList = await reqWithToken(url, "GET")
+      const searchedTestList = await reqWithToken(url, "GET", null, { superDtrf: props.fromSuperDtrf, dtrfFront: props.fromDtrfFront })
       // const searchedTestList = await axios.post(url, search, config);
       // console.log(searchString);
 
@@ -138,7 +142,6 @@ const PatientDetails = (props) => {
 
 
     } else {
-
       console.log("new ", selectedOptionForNewPatient);
       setSelectedPatient("new");
       // setSelectedPatient(null) 

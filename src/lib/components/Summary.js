@@ -165,7 +165,7 @@ const Summary = (props) => {
                                                 test_info.selectedTests.map(
                                                     (test, id) => (
                                                         <>
-                                                            <label><b>{test.test_name}</b></label>
+                                                            <label><b>{test.display_test_name}</b></label>
                                                             <br />
 
                                                             <label>Sample Type:&nbsp; </label>
@@ -191,7 +191,7 @@ const Summary = (props) => {
                                     <div className="card p-3" style={{ 'box-shadow': 'none' }}>
                                         <div class="section-title mb-2 mt-0">Test Information:</div>
                                         <div className="form-group mb-0">
-                                            <label><b>{test_info.test_name}</b></label>
+                                            <label><b>{test_info.display_test_name}</b></label>
                                             <br />
 
                                             <label>Sample Type:&nbsp; </label>
@@ -220,44 +220,7 @@ const Summary = (props) => {
 
 
                                     <div className="form-group">
-                                        {/* {((patient_details.isNew && !hasNbs) || props.from != "Dashboard") && (
-                                            <>
-                                                {collectionLocation.location == "Home" ?
 
-                                                    <div className="row">
-                                                        <DisplayFields
-                                                            title="First Name"
-                                                            data={patient_details.firstName}
-                                                        />
-                                                        <DisplayFields
-                                                            title="Last Name"
-                                                            data={patient_details.lastName}
-                                                        />
-
-                                                    </div> :
-                                                    (patient_details.filledBy == "Staff" || props.from == "Dashboard") &&
-                                                    <div className="row">
-                                                        <DisplayFields
-                                                            title="First Name"
-                                                            data={patient_details.firstName}
-                                                        />
-
-                                                        <DisplayFields
-                                                            title="Last Name"
-                                                            data={patient_details.lastName}
-                                                        />
-                                                    </div>
-                                                }
-
-                                                <div className="row">
-                                                    <DisplayFields
-                                                        title="Contact Number"
-                                                        data={patient_details.contact}
-                                                    />
-
-                                                </div>
-                                            </>
-                                        )} */}
                                         {(patient_details.isNew || patient_details.name.firstName) && (
                                             <>
                                                 {
@@ -271,22 +234,23 @@ const Summary = (props) => {
                                                                 title="Salutation"
                                                                 data={patient_details.salutation}
                                                             />
-                                                            {/* {hasNbs && <>
+                                                            {hasNbs && <>
                                                                 <div className="col-md-2 col-12">
                                                                     <div className="form-group mb-0">
-                                                                        <label className="col-form-label col-sm text-sm-right"><b>{
-                                                                            patient_details.hasBabyName == "true" ? "Baby's" : "Baby of"
-                                                                        }</b></label>
+                                                                        {(patient_details.hasBabyName || (typeof patient_details.hasBabyName == "boolean")) &&
+
+                                                                            <label className="col-form-label col-sm text-sm-right"><b>{
+                                                                                patient_details.hasBabyName.toString() == "true" ? "Baby's" : "B/O"
+                                                                            }</b></label>
+                                                                        }
                                                                     </div>
                                                                 </div>
-                                                            </> 
-                                                            } */}
+                                                            </>
+                                                            }
                                                             <DisplayFields
                                                                 title="First Name"
                                                                 data={
-                                                                    (hasNbs ?
-                                                                        (patient_details.hasBabyName == "true" ? "Baby " : "B/O ") : "") +
-                                                                        patient_details.name ?
+                                                                    patient_details.name ?
                                                                         (
 
                                                                             patient_details.name.firstName ?
@@ -301,10 +265,7 @@ const Summary = (props) => {
                                                             <DisplayFields
                                                                 title="Last Name"
                                                                 data={
-                                                                    (hasNbs ?
-
-                                                                        (patient_details.hasBabyName == "true" ? "Baby " : "B/O ") : "") +
-                                                                        patient_details.name ?
+                                                                    patient_details.name ?
                                                                         (
 
                                                                             patient_details.name.lastName ?
@@ -341,7 +302,7 @@ const Summary = (props) => {
                                                                     />
                                                                 }
                                                                 <DisplayFields
-                                                                    title="Gender"
+                                                                    title="Sex assigned at Birth"
                                                                     data={patient_details
                                                                         .gender == "male"
                                                                         ? "Male"
@@ -353,7 +314,7 @@ const Summary = (props) => {
                                                             </div>
 
                                                             {
-                                                                patient_details.ageType == "YMD" &&
+                                                                patient_details.ageType == "ageInYMD" &&
 
                                                                 <div className="row">
 
@@ -388,6 +349,7 @@ const Summary = (props) => {
                                                                         title="Date of Birth"
                                                                         data={patient_details.dateOfBirth}
                                                                         className="col-sm"
+                                                                        isDate={true}
                                                                     />
 
                                                                 }
@@ -408,15 +370,16 @@ const Summary = (props) => {
 
 
                                                                     <div className="row">
-                                                                        <div className="col-md-2 col-12">
-                                                                            <div className="form-group mb-0">
+                                                                        {patient_details.mothersFirstName &&
 
-
-                                                                                <label>
-                                                                                    Mothers
-                                                                                </label>
+                                                                            <div className="col-md-2 col-12">
+                                                                                <div className="form-group mb-0">
+                                                                                    <label>
+                                                                                        Mothers
+                                                                                    </label>
+                                                                                </div>
                                                                             </div>
-                                                                        </div>
+                                                                        }
                                                                         <DisplayFields
                                                                             title="First Name"
                                                                             data={from == "Confirmation" ?
@@ -430,17 +393,52 @@ const Summary = (props) => {
                                                                             title="Last Name"
                                                                             data={from == "Confirmation" ?
                                                                                 patient_details
-                                                                                    .mothersLasttName :
+                                                                                    .mothersLastName :
                                                                                 patient_details.mothersName.lastName
                                                                             }
                                                                             className="col-md-5 col-12"
                                                                         />
-                                                                        <DisplayFields
-                                                                            title="Mothers DOB:"
-                                                                            data={patient_details.mothersDateOfBirth}
-                                                                        />
 
                                                                     </div>
+                                                                    {
+                                                                        patient_details.mothersAgeType == "ageInYMD" ?
+                                                                            <>
+                                                                                <div className="row">
+                                                                                    <div className="col-sm">
+                                                                                        <div className="form-group mb-0">
+                                                                                            <label className="col-form-label col-sm-6 text-sm-right"><b>Mothers Age:</b></label>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <DisplayFields
+                                                                                        title="Years"
+                                                                                        data={patient_details.mothersAgeInYears}
+                                                                                        className="col-sm"
+                                                                                    />
+                                                                                    <DisplayFields
+                                                                                        title="Months"
+                                                                                        data={patient_details.mothersAgeInMonths}
+                                                                                        className="col-sm"
+                                                                                    />
+                                                                                    <DisplayFields
+                                                                                        title="Days"
+                                                                                        data={patient_details.mothersAgeInDays}
+                                                                                        className="col-sm"
+                                                                                    />
+                                                                                </div>
+                                                                                <DisplayFields
+                                                                                    title="Mothers DOB:"
+                                                                                    data={patient_details.mothersDateOfBirth}
+                                                                                    isDate={true}
+                                                                                />
+
+                                                                            </>
+                                                                            :
+                                                                            <DisplayFields
+                                                                                title="Mothers DOB:"
+                                                                                data={patient_details.mothersDateOfBirth}
+                                                                                isDate={true}
+                                                                            />
+                                                                    }
 
                                                                     <div className="row">
                                                                         <div className="col-md-2 col-12">
@@ -489,15 +487,21 @@ const Summary = (props) => {
                                                             <div className="row">
                                                                 <DisplayFields
                                                                     title="City"
-                                                                    data={patient_details.city.label ?
-                                                                        patient_details.city.label :
-                                                                        patient_details.city
+                                                                    data={
+                                                                        typeof patient_details.city == "object" ?
+                                                                            patient_details.city.label
+                                                                            :
+                                                                            patient_details.city
                                                                     }
                                                                 />
                                                                 <DisplayFields
                                                                     title="State"
-                                                                    data={patient_details.state.label ? patient_details.state.label
-                                                                        : patient_details.state}
+                                                                    data={
+                                                                        typeof patient_details.state == "object" ?
+                                                                            patient_details.state.label
+                                                                            :
+                                                                            patient_details.state
+                                                                    }
                                                                 />
                                                             </div>
                                                             {(hasNipt || hasPns) &&
@@ -539,21 +543,26 @@ const Summary = (props) => {
 
                                     </div>
                                 )}
-                                {(patient_details.filledBy == "patient" && from == "Confirmation") &&
-                                    <div className="row" id="action1">
-                                        <div className="col-md-12 col-12 text-right">
-                                            <div style={{ padding: "5px 20px" }}>
-                                                <button
-                                                    type="button"
-                                                    onClick={e => props.onResendClick()}
-                                                    className="btn btn-primary"
-                                                >
-                                                    Resend Link
-                                                </button>
+                                {patient_details && <>
+
+                                    {((patient_details.filledBy == "patient" && from == "Confirmation") && (!props.sendByLink)) &&
+                                        <div className="row" id="action1">
+                                            <div className="col-md-12 col-12 text-right">
+                                                <div style={{ padding: "5px 20px" }}>
+                                                    <button
+                                                        type="button"
+                                                        onClick={e => props.onResendClick()}
+                                                        className="btn btn-primary"
+                                                    >
+                                                        Resend Link
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    }
+                                </>
                                 }
+
                             </div>
                             {/* **************PATIENT DETAILS CLOSE*************** */}
                             {
@@ -569,11 +578,13 @@ const Summary = (props) => {
                                                         title="Sample Collection Date"
                                                         data={medical_info
                                                             .sampleCollectionDate}
+                                                        isDate={true}
                                                     />
                                                     <DisplayFields
                                                         title="First Feeding Date"
                                                         data={medical_info
                                                             .firstFeedingDate}
+                                                        isDate={true}
                                                     />
                                                     <DisplayFields
                                                         title="Type of Feeding"
@@ -593,6 +604,7 @@ const Summary = (props) => {
                                                         <DisplayFields
                                                             title="H/O Transfusion Date"
                                                             data={medical_info.dateOfHoTransfusion}
+                                                            isDate={true}
                                                         />
                                                     }
                                                     <DisplayFields
@@ -613,8 +625,9 @@ const Summary = (props) => {
                                         {
                                             !hasNbs && <>
                                                 <DisplayFields
-                                                    title="Scan Date"
+                                                    title="USG Date"
                                                     data={medical_info.usgDate}
+                                                    isDate={true}
                                                 />
 
                                                 <div class="section-title mb-2 mt-0">Gestational Age :</div>
@@ -639,6 +652,7 @@ const Summary = (props) => {
                                                     <DisplayFields
                                                         title="Sample Collection Date"
                                                         data={medical_info.sampleCollectionDate}
+                                                        isDate={true}
                                                     />
 
                                                     {from == "Confirmation" &&
@@ -821,32 +835,31 @@ const Summary = (props) => {
                                                             </>
                                                         )}
 
-                                                    {medical_info.Gravida &&
-                                                        <DisplayFields
-                                                            title="Gravida"
-                                                            data={medical_info.Gravida}
-                                                        />
-                                                    }
-                                                    {
-                                                        medical_info.Para &&
-                                                        <DisplayFields
-                                                            title="Para"
-                                                            data={medical_info.Para}
-                                                        />
-                                                    }
-                                                    {medical_info.Abortion &&
-                                                        <DisplayFields
-                                                            title="Abortion"
-                                                            data={medical_info.Abortion}
-                                                        />
 
-                                                    }
-                                                    {medical_info.Live &&
-                                                        <DisplayFields
-                                                            title="Live"
-                                                            data={medical_info.Live}
-                                                        />
-                                                    }
+                                                    <DisplayFields
+                                                        title="Gravida"
+                                                        data={medical_info.Gravida}
+                                                    />
+
+
+                                                    <DisplayFields
+                                                        title="Para"
+                                                        data={medical_info.Para}
+                                                    />
+
+
+                                                    <DisplayFields
+                                                        title="Abortion"
+                                                        data={medical_info.Abortion}
+                                                    />
+
+
+
+                                                    <DisplayFields
+                                                        title="Live"
+                                                        data={medical_info.Live}
+                                                    />
+
                                                 </>
                                             )}
                                             {(!hasCyto && medical_info.referralReason) &&
@@ -909,6 +922,7 @@ const Summary = (props) => {
                                                         <DisplayFields
                                                             title="Date on which the other twin had vanished/ reduced"
                                                             data={medical_info.dateOfTwinVanishOrReduced}
+                                                            isDate={true}
                                                         />
                                                     )}
                                                     <DisplayFields
@@ -946,6 +960,7 @@ const Summary = (props) => {
                                                             <DisplayFields
                                                                 title="Previous pregnancy Date"
                                                                 data={medical_info.prevPregDate}
+                                                                isDate={true}
                                                             />
                                                             <DisplayFields
                                                                 title="Spontaneous Abortion"
@@ -1018,16 +1033,18 @@ const Summary = (props) => {
                                             {hasPns && (
                                                 <>
                                                     <DisplayFields
-                                                        title="FMF Id"
+                                                        title="FMF ID"
                                                         data={medical_info.fmfId}
                                                     />
                                                     <DisplayFields
                                                         title="LMP"
                                                         data={medical_info.lmpDate}
+                                                        isDate={true}
                                                     />
                                                     <DisplayFields
                                                         title="USG/Corr EDD"
                                                         data={medical_info.usgCorrEddDate}
+                                                        isDate={true}
                                                     />
                                                     <DisplayFields
                                                         title="LMP Certainity"
@@ -1089,6 +1106,7 @@ const Summary = (props) => {
                                                             <DisplayFields
                                                                 title="Last date of HCG intake"
                                                                 data={medical_info.hcgIntakeDate}
+                                                                isDate={true}
                                                             />
                                                         )}
                                                     <DisplayFields
@@ -1112,10 +1130,12 @@ const Summary = (props) => {
                                                                 <DisplayFields
                                                                     title="Extraction date"
                                                                     data={medical_info.extractionDate}
+                                                                    isDate={true}
                                                                 />
                                                                 <DisplayFields
                                                                     title="Transfer date"
                                                                     data={medical_info.transferDate}
+                                                                    isDate={true}
                                                                 />
                                                                 {medical_info
                                                                     .typeOfProcedure == "Donor" && (
@@ -1130,18 +1150,22 @@ const Summary = (props) => {
 
                                                     {testTrimester == "First" && (
                                                         <>
-                                                            <DisplayFields
-                                                                title="CRL (in mm)"
-                                                                data={medical_info.crl}
-                                                            />
-                                                            <DisplayFields
-                                                                title="NT (in mm)"
-                                                                data={medical_info.nt}
-                                                            />
-                                                            <DisplayFields
-                                                                title="NB"
-                                                                data={medical_info.nb}
-                                                            />
+                                                            {medical_info.presentPregnancy != "Twins" && <>
+
+                                                                <DisplayFields
+                                                                    title="CRL (in mm)"
+                                                                    data={medical_info.crl}
+                                                                />
+                                                                <DisplayFields
+                                                                    title="NT (in mm)"
+                                                                    data={medical_info.nt}
+                                                                />
+                                                                <DisplayFields
+                                                                    title="NB"
+                                                                    data={medical_info.nb}
+                                                                />
+                                                            </>
+                                                            }
                                                         </>
                                                     )}
 
@@ -1184,6 +1208,7 @@ const Summary = (props) => {
                                                                     <DisplayFields
                                                                         title="BP Measurement Date"
                                                                         data={medical_info.bpMeasurementDate}
+                                                                        isDate={true}
                                                                     />
                                                                     <DisplayFields
                                                                         title="BP Left Arm - Systolic Reading 1"
@@ -1278,6 +1303,7 @@ const Summary = (props) => {
                                                                 <DisplayFields
                                                                     title="Date of Scan"
                                                                     data={medical_info.dateOfScan}
+                                                                    isDate={true}
                                                                 />
                                                             }
 
@@ -1312,7 +1338,7 @@ const Summary = (props) => {
                                             {/* ***********|FROM COnfirmation CLOSE*************** */}
                                             {/* ************FROM DASHBOARD********** */}
                                             {
-                                                (from == "Dashboard" && !hasNbs) &&
+                                                (from == "Dashboard") &&
                                                 <>
 
                                                     <DisplayFiles
@@ -1321,7 +1347,13 @@ const Summary = (props) => {
 
                                                         filesUploaded={props.filesUploaded}
                                                     />
-                                                    {medical_info.pcpndtScans &&
+
+                                                    <DisplayFiles
+                                                        for="Dashboard"
+                                                        files={props.reports}
+                                                        filesUploaded={[{ variable: "reports", display: "Reports" }]}
+                                                    />
+                                                    {/* {medical_info.pcpndtScans &&
 
                                                         <div className="col-10 col-md-8 form-group">
                                                             {
@@ -1350,7 +1382,7 @@ const Summary = (props) => {
                                                                 )
                                                             )}
                                                         </div>
-                                                    }
+                                                    } */}
 
 
                                                 </>
@@ -1368,114 +1400,124 @@ const Summary = (props) => {
                                             <div className="card p-3" style={{ 'box-shadow': 'none' }}>
                                                 <div class="section-title mb-1 mt-0">Sample Info:</div>
                                                 {test_info.selectedTests.map((test, id) => (
-                                                    <div className="row mb-2">
+                                                    <>
                                                         <div className="col-12 col-md-6">
                                                             <div className="form-group mb-0">
                                                                 <label className="col-form-label col-sm-6">
-                                                                    <b>{test.test_name}</b>
+                                                                    <b>Test name : {test.test_name}</b>
                                                                 </label>
                                                             </div>
                                                         </div>
-                                                        <div className="col-12 col-md-6">
-                                                            {sample_info.sampleContainerList[id].containers.map(
-                                                                (test, container_id) => (
-                                                                    <>
-                                                                        <div className="row mb-1">
-                                                                            <div className="col-6">
-                                                                                <div className="form-group mb-0">
-                                                                                    <label className="form-control" style={{ height: "auto" }}>
-                                                                                        Sample Container Type: {test.type}
-                                                                                    </label>
-                                                                                    <label className="form-control" style={{ height: "auto" }}>
-                                                                                        Sample Container ID: {test.id}
-                                                                                    </label>
+                                                        <div className="row mb-2">
+                                                            <div className="col-12 col-md-6">
+                                                                {sample_info.sampleContainerList[id].containers.map(
+                                                                    (test, container_id) => (
+                                                                        <>
+                                                                            <div className="row mb-1">
+                                                                                <div className="col-6">
+                                                                                    <div className="form-group mb-0">
+                                                                                        <label className="form-control" style={{ height: "auto" }}>
+                                                                                            Sample Container ID: {test.id}
+                                                                                        </label>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className="col-6">
+                                                                                    <div className="form-group mb-0">
+                                                                                        <label className="form-control" style={{ height: "auto" }}>
+                                                                                            Sample Container ID: {test.id}
+                                                                                        </label>
+                                                                                    </div>
                                                                                 </div>
                                                                             </div>
-                                                                        </div>
-                                                                    </>
-                                                                )
-                                                            )}
-                                                        </div>
-
-                                                        {test.pcpndt && (
-                                                            <>
-                                                                {
-                                                                    !sample_info.collectionLocation[id].location.hasOwnProperty("institute") ?
-                                                                        <>
-                                                                            <div class="section-title mb-1 mt-4 col-12">Location</div>
-                                                                            <div className="col-12">
-                                                                                <DisplayFields
-                                                                                    title={"Address"}
-                                                                                    data={
-                                                                                        sample_info
-                                                                                            .collectionLocation[id].location.address
-                                                                                    }
-                                                                                />
-                                                                                <DisplayFields
-                                                                                    title="Pincode"
-                                                                                    data={
-                                                                                        sample_info
-                                                                                            .collectionLocation[id].location.pinCode
-                                                                                    }
-                                                                                />
-                                                                                <DisplayFields
-                                                                                    title="City"
-                                                                                    data={
-                                                                                        sample_info.collectionLocation[id].location.city &&
-                                                                                        sample_info.collectionLocation[id].location.city.value
-                                                                                    }
-                                                                                />
-                                                                                <DisplayFields
-                                                                                    title="State"
-                                                                                    data={sample_info.collectionLocation[id].location.state &&
-                                                                                        sample_info.collectionLocation[id].location.state.value
-                                                                                    }
-                                                                                />
-                                                                            </div>
-
-
-                                                                        </> : <>
-                                                                            <div className="form-group mb-0">
-                                                                                <label className="col-form-label col-sm-6 text-sm-right">
-                                                                                    <b>Location</b>
-                                                                                </label>
-                                                                                <label className="col-form-label col-sm-6">
-                                                                                    Institute Location
-                                                                                </label>
-                                                                            </div>
                                                                         </>
-                                                                }
+                                                                    )
+                                                                )}
+                                                            </div>
 
-                                                                <div className="col-12 col-md-12">
+                                                            {test.pcpndt && (
+                                                                <>
                                                                     {
-                                                                        sample_info.pcpndtList &&
-                                                                        <div className="section-title mb-1 mt-4 col-12">PCPNDT SCAN</div>
-                                                                    }
-                                                                    {sample_info.pcpndtList[id].scans.map(
-                                                                        (name, container_id) => (
+                                                                        !sample_info.collectionLocation[id].location.hasOwnProperty("institute") ?
                                                                             <>
-                                                                                <div className="row mb-1">
-                                                                                    <div className="col-10">
-                                                                                        <a href={name.location}>
-                                                                                            <div className="form-control mb-0">
-                                                                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
-                                                                                                <label
-                                                                                                    className="ml-2"
-                                                                                                    style={{ fontSize: "12px" }}
-                                                                                                >
-                                                                                                    {name.name ? name.name : name.originalname ? name.originalname : name.displayName}
-                                                                                                </label>
-                                                                                            </div>
-                                                                                        </a>
+                                                                                <div class="section-title mb-1 mt-4 col-12">Location</div>
+                                                                                <div className="col-12">
+                                                                                    <DisplayFields
+                                                                                        title={"Address"}
+                                                                                        data={
+                                                                                            sample_info
+                                                                                                .collectionLocation[id].location.address
+                                                                                        }
+                                                                                    />
+                                                                                    <DisplayFields
+                                                                                        title="Pincode"
+                                                                                        data={
+                                                                                            sample_info
+                                                                                                .collectionLocation[id].location.pinCode
+                                                                                        }
+                                                                                    />
+                                                                                    <DisplayFields
+                                                                                        title="City"
+                                                                                        data={
+                                                                                            sample_info.collectionLocation[id].location.city &&
+                                                                                            sample_info.collectionLocation[id].location.city.value
+                                                                                        }
+                                                                                    />
+                                                                                    <DisplayFields
+                                                                                        title="State"
+                                                                                        data={sample_info.collectionLocation[id].location.state &&
+                                                                                            sample_info.collectionLocation[id].location.state.value
+                                                                                        }
+                                                                                    />
+                                                                                </div>
+
+
+                                                                            </> : <>
+                                                                                <div className="col-6">
+                                                                                    <div className="form-group mb-0">
+                                                                                        <label className="col-form-label col-sm-6 text-sm-right">
+                                                                                            <b>Location</b>
+                                                                                        </label>
+                                                                                        <label className="col-form-label col-sm-6">
+                                                                                            Institute Location
+                                                                                        </label>
                                                                                     </div>
                                                                                 </div>
                                                                             </>
-                                                                        )
-                                                                    )}
-                                                                </div>
-                                                            </>
-                                                        )}
-                                                    </div>
+                                                                    }
+
+                                                                    <div className="col-12 col-md-12">
+                                                                        {
+                                                                            sample_info.pcpndtList &&
+                                                                            <div className="section-title mb-1 mt-4 col-12">PCPNDT SCAN</div>
+                                                                        }
+                                                                        <div className="col-6">
+                                                                            {sample_info.pcpndtList[id].scans.map(
+                                                                                (name, container_id) => (
+                                                                                    <>
+                                                                                        <div className="row mb-1">
+                                                                                            <div className="col-10">
+                                                                                                <a href={name.location}>
+                                                                                                    <div className="form-control mb-0">
+                                                                                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
+                                                                                                        <label
+                                                                                                            className="ml-2"
+                                                                                                            style={{ fontSize: "12px" }}
+                                                                                                        >
+                                                                                                            {name.name ? name.name : name.originalname ? name.originalname : name.displayName}
+                                                                                                        </label>
+                                                                                                    </div>
+                                                                                                </a>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </>
+                                                                                )
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    </>
                                                 ))}
                                             </div>
 
@@ -1488,36 +1530,37 @@ const Summary = (props) => {
                                             <div className="card p-3" style={{ 'box-shadow': 'none' }}>
                                                 <div class="section-title mb-2 mt-0">Test Information:</div>
                                                 <div className="row mb-2">
-                                                    <div className="col-12 col-md-6">
+                                                    <div className="col-12 col-md-12">
                                                         <div className="form-group mb-0">
                                                             <label className="col-form-label col-sm-6">
                                                                 <b>{test_info.test_name}</b>
                                                             </label>
                                                         </div>
                                                     </div>
-                                                    <div className="col-12 col-md-6">
-                                                        {sample_info.samples.map(
-                                                            (sample, index) => (
-                                                                <>
-                                                                    <div className="row">
+                                                    {sample_info.samples.map(
+                                                        (sample, index) => (
+                                                            <>
+                                                                <div className="row mt-2 ml-2">
+                                                                    <div className="row ml-2">
                                                                         <div class="section-title mb-1 mt-0">Sample {index + 1}</div>
 
                                                                     </div>
-                                                                    <div className="row mb-1">
+                                                                    <div className="row mb-1 ml-1 mr-1">
+
                                                                         <div className="col-6">
-                                                                            <div className="form-group mb-0">
-                                                                                <label className="form-control" style={{ height: "auto" }}>
-                                                                                    Sample  Type: {sample.sample_type}
-                                                                                </label>
-                                                                                <label className="form-control" style={{ height: "auto" }}>
-                                                                                    Sample  status: {sample.status}
-                                                                                </label>
-                                                                            </div>
+                                                                            <label className="form-control" style={{ height: "auto" }}>
+                                                                                Sample  Type: {sample.sample_type}
+                                                                            </label>
+                                                                        </div>
+                                                                        <div className="col-6">
+                                                                            <label className="form-control" style={{ height: "auto" }}>
+                                                                                Sample  status: {sample.status}
+                                                                            </label>
                                                                         </div>
                                                                         {
                                                                             sample.containers.map((sampleDetail) =>
 
-                                                                                <div className="col-6">
+                                                                                <div className="col-12">
                                                                                     <div className="form-group mb-0">
                                                                                         <label className="form-control" style={{ height: "auto" }}>
                                                                                             Sample Container-Type: {sampleDetail.type}
@@ -1530,10 +1573,11 @@ const Summary = (props) => {
                                                                             )
                                                                         }
                                                                     </div>
-                                                                </>
-                                                            )
-                                                        )}
-                                                    </div>
+                                                                </div>
+
+                                                            </>
+                                                        )
+                                                    )}
                                                 </div>
                                             </div>
                                         </>
@@ -1570,7 +1614,7 @@ const Summary = (props) => {
                                                     <div className="row mb-1">
                                                         <div className="col-6">
                                                             <div className="form-group mb-0">
-                                                                <label>{test.test_name}</label>
+                                                                <label>{test.display_test_name}</label>
                                                             </div>
                                                         </div>
                                                         <div className="col-6">

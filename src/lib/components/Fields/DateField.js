@@ -23,7 +23,7 @@ const DateFieldComponent = (props) => {
                     className="form-control"
                     min={props.min}
                     max={props.max}
-                    disabled={props.disabled}
+                    disabled={props.isDisabled}
                 />
                 <ErrorMessage
                     name={props.name}

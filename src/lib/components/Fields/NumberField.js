@@ -24,7 +24,7 @@ const NumberField = (props) => {
                     onKeyDown={(e) => ["e", "`", "#", "E", "+", "-"].includes(e.key) && e.preventDefault()}
                     placeholder={props.placeholder}
                     className="form-control"
-                    disabled={props.disabled}
+                    disabled={props.isDisabled}
                     min={props.min}
                     max={props.max}
                     step={props.step}

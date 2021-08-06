@@ -8,6 +8,15 @@ export const errorMessage = (msg) => {
     message.error(msg);
 };
 
+export const hasValue = (data) => {
+
+    if (["", null, false, undefined].includes(data)) {
+        return false
+    } else {
+        return true
+    }
+}
+
 
 export const successMessage = (msg) => {
     message.success(msg)

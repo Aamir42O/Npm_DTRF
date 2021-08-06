@@ -36,6 +36,8 @@ const DisplayFiles = props => {
         return "Confirmatory Test File for History of Patau Syndrome";
       } else if (file == "xmlLicenseFile") {
         return "XML License File";
+      } else if (file == "PCPNDT") {
+        return "PCPNDT";
       }
     }
   };
@@ -51,7 +53,7 @@ const DisplayFiles = props => {
         className: "row mb-1"
       }, /*#__PURE__*/_react.default.createElement("div", {
         className: "col-10"
-      }, props.for == "Dashbaord" ? /*#__PURE__*/_react.default.createElement("a", {
+      }, props.for == "Dashboard" ? /*#__PURE__*/_react.default.createElement("a", {
         href: test.location
       }, /*#__PURE__*/_react.default.createElement("div", {
         className: "form-control mb-0",

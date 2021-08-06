@@ -31,6 +31,8 @@ var _formData = require("../../actions/formData");
 
 var _fileupload = require("../../actions/fileupload");
 
+var _jsCookie = _interopRequireDefault(require("js-cookie"));
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function _getRequireWildcardCache(nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
@@ -143,6 +145,8 @@ const DoctorInfo = props => {
     }
 
     if (e) {
+      setShowDoctorErrorMessage(false);
+
       if (props.formDataRedux.test_info) {
         const data = props.formDataRedux.test_info;
         delete data.test_info;
@@ -214,8 +218,16 @@ const DoctorInfo = props => {
     if (doctor.length > 2) {
       console.log("INSIDE", process.env.NEXT_PUBLIC_ALL_DOCTORS);
       let url = "".concat(process.env.NEXT_PUBLIC_ALL_DOCTORS, "?searchquery=").concat(doctor);
+
+      if (props.fromSuperDtrf) {
+        url = "".concat(process.env.NEXT_PUBLIC_ALL_DOCTORS, "?searchquery=").concat(doctor, "&institute=").concat(props.formDataRedux.institute_info.instituteName.lilac_id);
+      }
+
       console.log("INSIDE condition", url);
-      const resp = await (0, _Auth.default)(url, "GET");
+      const resp = await (0, _Auth.default)(url, "GET", null, {
+        superDtrf: props.fromSuperDtrf,
+        dtrfFront: props.fromDtrfFront
+      });
       console.log(resp);
       return resp.data.data.doctorSearchList;
     }
@@ -229,7 +241,10 @@ const DoctorInfo = props => {
       console.log("INSIDE", process.env.NEXT_PUBLIC_ALL_REFERRAL_DOCTORS);
       let url = "".concat(process.env.NEXT_PUBLIC_ALL_REFERRAL_DOCTORS, "?searchquery=").concat(doctor);
       console.log("INSIDE condition", url);
-      const resp = await (0, _Auth.default)(url, "GET");
+      const resp = await (0, _Auth.default)(url, "GET", null, {
+        superDtrf: props.fromSuperDtrf,
+        dtrfFront: props.fromDtrfFront
+      });
       console.log(resp);
       return resp.data.data.doctorSearchList;
     }
@@ -342,6 +357,7 @@ const DoctorInfo = props => {
     }, /*#__PURE__*/_react.default.createElement("label", null, "Doctor: ", /*#__PURE__*/_react.default.createElement("span", {
       className: "marked"
     }, "*")), /*#__PURE__*/_react.default.createElement(_async.default, {
+      isDisabled: props.fromSuperDtrf ? _jsCookie.default.get("roleAL") == "bdm" ? true : false : false,
       isClearable: true,
       cacheOptions: true,
       defaultOptions: true,
